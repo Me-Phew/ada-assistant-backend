@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 
 	"github.com/labstack/echo/v4"
 )

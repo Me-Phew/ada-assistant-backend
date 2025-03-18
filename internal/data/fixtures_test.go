@@ -3,8 +3,8 @@ package data_test
 import (
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/data"
-	"allaboutapps.dev/aw/go-starter/internal/models"
+	"github.com/Me-Phew/ada-assistant-backend/internal/data"
+	"github.com/Me-Phew/ada-assistant-backend/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 

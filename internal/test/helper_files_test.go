@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/test"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 

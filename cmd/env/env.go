@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"allaboutapps.dev/aw/go-starter/internal/config"
+	"github.com/Me-Phew/ada-assistant-backend/internal/config"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

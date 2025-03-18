@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 	"github.com/stretchr/testify/require"
 )
 

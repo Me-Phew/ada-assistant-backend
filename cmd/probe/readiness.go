@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 
-	"allaboutapps.dev/aw/go-starter/internal/api"
-	"allaboutapps.dev/aw/go-starter/internal/api/handlers/common"
-	"allaboutapps.dev/aw/go-starter/internal/config"
-	"allaboutapps.dev/aw/go-starter/internal/util"
-	"allaboutapps.dev/aw/go-starter/internal/util/command"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api/handlers/common"
+	"github.com/Me-Phew/ada-assistant-backend/internal/config"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util/command"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

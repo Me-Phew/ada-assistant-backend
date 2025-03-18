@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/api/middleware"
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api/middleware"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

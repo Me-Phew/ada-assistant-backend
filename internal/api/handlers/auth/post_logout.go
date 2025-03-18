@@ -5,12 +5,12 @@ import (
 	"errors"
 	"net/http"
 
-	"allaboutapps.dev/aw/go-starter/internal/api"
-	"allaboutapps.dev/aw/go-starter/internal/api/auth"
-	"allaboutapps.dev/aw/go-starter/internal/models"
-	"allaboutapps.dev/aw/go-starter/internal/types"
-	"allaboutapps.dev/aw/go-starter/internal/util"
-	"allaboutapps.dev/aw/go-starter/internal/util/db"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api/auth"
+	"github.com/Me-Phew/ada-assistant-backend/internal/models"
+	"github.com/Me-Phew/ada-assistant-backend/internal/types"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util/db"
 	"github.com/labstack/echo/v4"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )

@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 )
 
 func GetPKCECodeVerifier() (string, error) {

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"allaboutapps.dev/aw/go-starter/internal/mailer/transport"
-	"allaboutapps.dev/aw/go-starter/internal/push/provider"
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/mailer/transport"
+	"github.com/Me-Phew/ada-assistant-backend/internal/push/provider"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 	"github.com/rs/zerolog"
 	"golang.org/x/text/language"
 )

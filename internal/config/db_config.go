@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 )
 
 // The DatabaseMigrationTable name is baked into the binary

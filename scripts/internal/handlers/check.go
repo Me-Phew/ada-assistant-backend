@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	"allaboutapps.dev/aw/go-starter/internal/api"
-	"allaboutapps.dev/aw/go-starter/internal/api/router"
-	"allaboutapps.dev/aw/go-starter/internal/config"
-	"allaboutapps.dev/aw/go-starter/internal/types"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api/router"
+	"github.com/Me-Phew/ada-assistant-backend/internal/config"
+	"github.com/Me-Phew/ada-assistant-backend/internal/types"
 	"github.com/rs/zerolog"
 )
 

@@ -1,4 +1,4 @@
-module allaboutapps.dev/aw/go-starter
+module github.com/Me-Phew/ada-assistant-backend
 
 go 1.24.0
 

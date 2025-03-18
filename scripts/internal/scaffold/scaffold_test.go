@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/test"
-	"allaboutapps.dev/aw/go-starter/internal/util"
-	"allaboutapps.dev/aw/go-starter/scripts/internal/scaffold"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/scripts/internal/scaffold"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

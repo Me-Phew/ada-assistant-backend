@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/models"
-	"allaboutapps.dev/aw/go-starter/internal/test"
+	"github.com/Me-Phew/ada-assistant-backend/internal/models"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/volatiletech/null/v8"

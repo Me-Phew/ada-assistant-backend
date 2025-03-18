@@ -8,12 +8,12 @@ import (
 	"regexp"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/api"
-	"allaboutapps.dev/aw/go-starter/internal/test"
-	"allaboutapps.dev/aw/go-starter/internal/test/mocks"
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test/mocks"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 
-	apitypes "allaboutapps.dev/aw/go-starter/internal/types"
+	apitypes "github.com/Me-Phew/ada-assistant-backend/internal/types"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

@@ -1,6 +1,6 @@
 package main
 
-import "allaboutapps.dev/aw/go-starter/cmd"
+import "github.com/Me-Phew/ada-assistant-backend/cmd"
 
 func main() {
 	cmd.Execute()

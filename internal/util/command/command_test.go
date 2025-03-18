@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/api"
-	"allaboutapps.dev/aw/go-starter/internal/test"
-	"allaboutapps.dev/aw/go-starter/internal/util/command"
+	"github.com/Me-Phew/ada-assistant-backend/internal/api"
+	"github.com/Me-Phew/ada-assistant-backend/internal/test"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

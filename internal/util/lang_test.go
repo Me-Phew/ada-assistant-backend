@@ -3,7 +3,7 @@ package util_test
 import (
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/text/collate"
 	"golang.org/x/text/language"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"allaboutapps.dev/aw/go-starter/internal/config"
+	"github.com/Me-Phew/ada-assistant-backend/internal/config"
 )
 
 func TestPrintServiceEnv(t *testing.T) {

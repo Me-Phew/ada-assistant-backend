@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"allaboutapps.dev/aw/go-starter/internal/models"
+	"github.com/Me-Phew/ada-assistant-backend/internal/models"
 )
 
 type AuthenticationResult struct {

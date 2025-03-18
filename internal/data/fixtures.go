@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"allaboutapps.dev/aw/go-starter/internal/models"
-	"allaboutapps.dev/aw/go-starter/internal/util"
+	"github.com/Me-Phew/ada-assistant-backend/internal/models"
+	"github.com/Me-Phew/ada-assistant-backend/internal/util"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
