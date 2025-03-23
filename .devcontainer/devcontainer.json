@@ -87,7 +87,7 @@
 				// optional:
 				"42crunch.vscode-openapi",
 				"heaths.vscode-guid",
-				"bungcip.better-toml",
+				"tamasfe.even-better-toml",
 				"eamodio.gitlens",
 				"casualjim.gotemplate",
 				"yzhang.markdown-all-in-one"
