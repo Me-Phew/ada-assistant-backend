@@ -1,0 +1,36 @@
+version: '3'
+services:
+  api:
+    build:
+     context: .
+     target: build
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db/wavezync
+      - PORT=3000
+    ports:
+      - 3000:3000
+      - 9229:9229
+    working_dir: /app
+    volumes:
+      - .:/usr/src/app
+      - node_modules:/usr/src/app/node_modules
+      - dist:/usr/src/app/dist
+    depends_on:
+      - db
+    command: pnpm run start:debug
+
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=wavezync
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  node_modules:
+  postgres-data:
+  dist:
