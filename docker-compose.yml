@@ -1,11 +1,10 @@
-version: '3'
 services:
   api:
     build:
-     context: .
-     target: build
+      context: .
+      target: build
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db/wavezync
+      - DATABASE_URL=postgres://postgres:postgres@db/ada-assistant-dev
       - PORT=3000
     ports:
       - 3000:3000
@@ -24,7 +23,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=wavezync
+      - POSTGRES_DB=ada-assistant-dev
     ports:
       - '5432:5432'
     volumes:

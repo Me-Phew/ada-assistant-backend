@@ -2,14 +2,14 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
+import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
-import { AppModule } from './app.module';
-import { BaseExceptionsFilter } from './common/filters/base-exception.filter';
-import { ValidationException } from './common/exceptions/validation.exception';
-import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
 import rawBodyMiddleware from 'utils/rawBody.middleware';
-import { apiReference } from '@scalar/nestjs-api-reference';
+import { AppModule } from './app.module';
+import { ValidationException } from './common/exceptions/validation.exception';
+import { BaseExceptionsFilter } from './common/filters/base-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -74,8 +74,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const openApiConfig = new DocumentBuilder()
-    .setTitle('WaveZync NestJS starter')
-    .setDescription('WaveZync NestJS starter')
+    .setTitle('Ada Voice Assistant API')
+    .setDescription('Ada Voice Assistant API')
     .setVersion('1.0')
     .addServer(`http://localhost:${port}`, 'Local')
     .setExternalDoc(
