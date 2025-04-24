@@ -1,15 +1,18 @@
 import { sql, type Kysely } from 'kysely';
-import { DB } from '../schema/db';
 
-const tableName = 'users';
+const tableName = 'conversations';
 
-export async function up(db: Kysely<DB>): Promise<void> {
+export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable(tableName)
     .addColumn('id', 'uuid', (col) => col.primaryKey())
-    .addColumn('email', 'text', (col) => col.unique())
-    .addColumn('password_hash', 'text')
-    .addColumn('verified', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('user_id', 'uuid', (col) =>
+      col.references('users.id').onDelete('cascade'),
+    )
+    .addColumn('device_id', 'uuid', (col) =>
+      col.references('devices.id').onDelete('cascade'),
+    )
+    .addColumn('start_datetime', 'timestamptz')
     .addColumn('created_at', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
@@ -19,6 +22,6 @@ export async function up(db: Kysely<DB>): Promise<void> {
     .execute();
 }
 
-export async function down(db: Kysely<DB>): Promise<void> {
+export async function down(db: Kysely<any>): Promise<void> {
   await db.schema.dropTable(tableName).execute();
 }
