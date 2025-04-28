@@ -21,6 +21,7 @@ async function bootstrap() {
   const port = configService.get<number>('port');
   const logger = app.get(Logger);
   const corsMaxAge = configService.get<number>('corsMaxAge');
+  const corsAllowedOrigins = configService.get<string[]>('corsAllowedOrigins');
 
   const helmetContentSecurityPolicy = {
     directives: {
@@ -52,7 +53,31 @@ async function bootstrap() {
     }),
     rawBodyMiddleware({}),
   );
+
+  // FOR TESTING ONLY!!!
+  // app.enableCors({
+  //   origin: (origin, callback) => {
+  //     console.log('Origin attempting to connect:', origin);
+      
+  //     if (!origin) {
+  //       callback(null, true);
+  //       return;
+  //     }
+      
+  //     if (corsAllowedOrigins.includes(origin)) {
+  //       callback(null, true);
+  //     } else {
+  //       console.log('Blocked origin:', origin);
+  //       console.log('Allowed origins:', corsAllowedOrigins);
+  //       callback(null, false);
+  //     }
+  //   },
+  //   maxAge: corsMaxAge,
+  //   credentials: true
+  // });
+
   app.enableCors({
+    origin: corsAllowedOrigins,
     maxAge: corsMaxAge,
   });
   app.enableVersioning({

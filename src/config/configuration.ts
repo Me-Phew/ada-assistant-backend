@@ -10,6 +10,7 @@ export interface AppConfig {
   logger: LoggerConfig;
   isDevEnv: boolean;
   corsMaxAge: number;
+  corsAllowedOrigins: string[]; 
 }
 
 export interface DatabaseConfig {
@@ -40,6 +41,7 @@ export default (): AppConfig => {
     }),
     LOGGER_FORMAT: str({ choices: ['json', 'pretty'], default: 'json' }),
     CORS_MAX_AGE: num({ default: 86400 }),
+    CORS_ALLOWED_ORIGINS: str({ default: 'http://localhost:3000,http://localhost:8080' }),
   });
 
   const config: AppConfig = {
@@ -55,6 +57,7 @@ export default (): AppConfig => {
     },
     isDevEnv: env.isDev,
     corsMaxAge: env.CORS_MAX_AGE,
+    corsAllowedOrigins: env.CORS_ALLOWED_ORIGINS.split(','),
   };
 
   return config;
