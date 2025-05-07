@@ -42,21 +42,26 @@ export class JwtGuard implements CanActivate {
   }
 
   async validateRequest(req: Request) {
+    let token: string | undefined;
     const authHeader = req.header('authorization');
-
-    if (!authHeader) {
-      throw new UnauthorizedException();
+    if (authHeader) {
+      const [method, tokenValue] = authHeader.split(' ');
+      if (method === 'Bearer' && tokenValue) {
+        token = tokenValue;
+      }
     }
 
-    const [method, token] = authHeader.split(' ');
+    if (!token && req.query && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
 
-    if (method !== 'Bearer') {
+    if (!token) {
       throw new UnauthorizedException();
     }
 
     const user = await this.authService.authenticateWithJwt(token);
     if (!user) {
-      return false;
+      throw new UnauthorizedException();
     }
     req.user = user;
     return true;

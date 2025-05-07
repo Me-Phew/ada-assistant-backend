@@ -10,7 +10,8 @@ export interface AppConfig {
   logger: LoggerConfig;
   isDevEnv: boolean;
   corsMaxAge: number;
-  corsAllowedOrigins: string[]; 
+  corsAllowedOrigins: string[];
+  spotify: SpotifyConfig;
 }
 
 export interface DatabaseConfig {
@@ -28,8 +29,13 @@ export interface LoggerConfig {
   format: LoggerFormat;
 }
 
+export interface SpotifyConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
 export default (): AppConfig => {
-  // validate env vars
   const env = cleanEnv(process.env, {
     SECRET: str(),
     PORT: port({ default: 3000 }),
@@ -42,6 +48,9 @@ export default (): AppConfig => {
     LOGGER_FORMAT: str({ choices: ['json', 'pretty'], default: 'json' }),
     CORS_MAX_AGE: num({ default: 86400 }),
     CORS_ALLOWED_ORIGINS: str({ default: 'http://localhost:3000,http://localhost:8080' }),
+    SPOTIFY_CLIENT_ID: str(),
+    SPOTIFY_CLIENT_SECRET: str(),
+    SPOTIFY_REDIRECT_URI: str({ default: '<my_spotify_redirec_url>/api/spotify/callback' }),
   });
 
   const config: AppConfig = {
@@ -58,6 +67,11 @@ export default (): AppConfig => {
     isDevEnv: env.isDev,
     corsMaxAge: env.CORS_MAX_AGE,
     corsAllowedOrigins: env.CORS_ALLOWED_ORIGINS.split(','),
+    spotify: {
+      clientId: env.SPOTIFY_CLIENT_ID,
+      clientSecret: env.SPOTIFY_CLIENT_SECRET,
+      redirectUri: env.SPOTIFY_REDIRECT_URI,
+    },
   };
 
   return config;

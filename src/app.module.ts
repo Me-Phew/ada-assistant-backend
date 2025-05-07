@@ -19,6 +19,7 @@ import { join } from 'path';
 import { formatGraphQLError } from 'common/graphql/errors';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { SpotifyModule } from './modules/spotify/spotify.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
     AuthModule,
     UserModule,
     HealthModule,
+    SpotifyModule,
   ],
   providers: [
     Logger,
