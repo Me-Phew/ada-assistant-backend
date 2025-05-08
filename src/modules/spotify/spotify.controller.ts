@@ -64,11 +64,14 @@ export class SpotifyController {
       this.logger.log(`Play request received with body: ${JSON.stringify(body)}`);
       
       if (!body.query) {
-        return res.status(400).json({ message: 'Query parameter is required' });
+        return res.status(400).json({ 
+          message: 'Query parameter is required', 
+          success: false 
+        });
       }
       
       try {
-        const searchResults = await this.spotifyService.searchTracks(userId, body.query, 1);
+        const searchResults = await this.spotifyService.searchTracks(userId, body.query, 20);
         
         if (!searchResults?.tracks?.items?.length) {
           return res.status(404).json({ 
@@ -77,10 +80,39 @@ export class SpotifyController {
           });
         }
         
-        const track = searchResults.tracks.items[0];
-        const trackUri = track.uri;
+        // Try to find the best match by looking for artist + track name matches
+        const tracks = searchResults.tracks.items;
+        let bestMatch = tracks[0];
+        
+        // Extract artist and track name from the query (if in format "Artist track name")
+        const queryLower = body.query.toLowerCase();
+        const queryParts = queryLower.split(' ');
+        
+        if (queryParts.length > 1) {
+          // Try to find tracks where both artist and track name match parts of the query
+          const betterMatches = tracks.filter(track => {
+            const artistNamesLower = track.artists.map(a => a.name.toLowerCase());
+            const trackNameLower = track.name.toLowerCase();
+            
+            // Check if any artist name is found in the query
+            const artistMatch = artistNamesLower.some(name => queryLower.includes(name));
+            // Check if track name is found in the query
+            const trackMatch = queryParts.some(part => 
+              trackNameLower.includes(part) && part.length > 3);
+              
+            return artistMatch && trackMatch;
+          });
+          
+          if (betterMatches.length > 0) {
+            bestMatch = betterMatches[0];
+            this.logger.log(`Found better match: "${bestMatch.artists[0].name} - ${bestMatch.name}"`);
+          }
+        }
+        
+        this.logger.log(`Selected track to play: "${bestMatch.artists[0].name} - ${bestMatch.name}"`);
         
         try {
+          const trackUri = bestMatch.uri;
           const success = await this.spotifyService.playTrack(userId, trackUri);
         
           if (success) {
@@ -88,11 +120,11 @@ export class SpotifyController {
               message: 'Track is playing',
               success: true,
               track: {
-                name: track.name,
-                artist: track.artists[0].name,
-                album: track.album.name,
+                name: bestMatch.name,
+                artist: bestMatch.artists[0].name,
+                album: bestMatch.album.name,
                 uri: trackUri,
-                image: track.album.images[0]?.url
+                image: bestMatch.album.images[0]?.url
               }
             });
           } else {
@@ -201,6 +233,158 @@ export class SpotifyController {
     } catch (error) {
       console.error('Error fetching currently playing track:', error);
       return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('pause')
+  async pausePlayback(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const success = await this.spotifyService.pausePlayback(userId);
+
+      if (success) {
+        return res.status(200).json({ 
+          message: 'Playback paused',
+          success: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to pause playback',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error pausing playback:', error);
+      return res.status(500).json({
+        message: (error as Error).message || 'Internal server error',
+        success: false
+      });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('resume')
+  async resumePlayback(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const success = await this.spotifyService.resumePlayback(userId);
+
+      if (success) {
+        return res.status(200).json({ 
+          message: 'Playback resumed',
+          success: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to resume playback',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error resuming playback:', error);
+      return res.status(500).json({
+        message: (error as Error).message || 'Internal server error',
+        success: false
+      });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('next')
+  async skipToNext(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const success = await this.spotifyService.skipToNext(userId);
+
+      if (success) {
+        return res.status(200).json({ 
+          message: 'Skipped to next track',
+          success: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to skip to next track',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error skipping to next track:', error);
+      return res.status(500).json({
+        message: (error as Error).message || 'Internal server error',
+        success: false
+      });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('previous')
+  async skipToPrevious(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const success = await this.spotifyService.skipToPrevious(userId);
+
+      if (success) {
+        return res.status(200).json({ 
+          message: 'Skipped to previous track',
+          success: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to skip to previous track',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error skipping to previous track:', error);
+      return res.status(500).json({
+        message: (error as Error).message || 'Internal server error',
+        success: false
+      });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('volume')
+  async setVolume(
+    @Req() req: Request,
+    @Body() body: { volume: number },
+    @Res() res: Response,
+  ) {
+    const userId = req.user.id;
+
+    try {
+      if (typeof body.volume !== 'number' || isNaN(body.volume)) {
+        return res.status(400).json({ 
+          message: 'Volume must be a number between 0 and 100',
+          success: false
+        });
+      }
+
+      const success = await this.spotifyService.setVolume(userId, body.volume);
+
+      if (success) {
+        return res.status(200).json({ 
+          message: `Volume set to ${Math.round(body.volume)}%`,
+          success: true,
+          volume: Math.round(body.volume)
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to set volume',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error setting volume:', error);
+      return res.status(500).json({
+        message: (error as Error).message || 'Internal server error',
+        success: false
+      });
     }
   }
 }

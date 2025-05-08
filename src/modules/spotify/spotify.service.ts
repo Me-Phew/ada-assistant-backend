@@ -247,22 +247,166 @@ export class SpotifyService {
     const accessToken = await this.getValidAccessToken(userId);
 
     if (!accessToken) {
+      this.logger.error('No valid access token found for user');
       throw new Error('No valid access token found for user');
     }
 
     try {
+      this.logger.log(`Attempting to pause playback for user: ${userId}`);
+      
       await axios({
         method: 'put',
         url: 'https://api.spotify.com/v1/me/player/pause',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-        },
+          'Content-Type': 'application/json'
+        }
       });
 
+      this.logger.log('Playback paused successfully');
       return true;
     } catch (error) {
-      this.logger.error('Failed to pause track', (error as any).response?.data || (error as any).message);
-      return false;
+      const err = error as any;
+      this.logger.error('Failed to pause playback', { 
+        error: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response?.status === 404) {
+        throw new Error('No active Spotify device found. Please open Spotify on a device first.');
+      }
+      
+      if (err.response?.status === 403) {
+        throw new Error('Spotify Premium is required to control playback.');
+      }
+      
+      throw new Error(`Failed to pause playback: ${err.response?.data?.error?.message || err.message}`);
+    }
+  }
+
+  async resumePlayback(userId: string): Promise<boolean> {
+    const accessToken = await this.getValidAccessToken(userId);
+
+    if (!accessToken) {
+      this.logger.error('No valid access token found for user');
+      throw new Error('No valid access token found for user');
+    }
+
+    try {
+      this.logger.log(`Attempting to resume playback for user: ${userId}`);
+      
+      await axios({
+        method: 'put',
+        url: 'https://api.spotify.com/v1/me/player/play',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      this.logger.log('Playback resumed successfully');
+      return true;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error('Failed to resume playback', {
+        error: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response?.status === 404) {
+        throw new Error('No active Spotify device found. Please open Spotify on a device first.');
+      }
+      
+      if (err.response?.status === 403) {
+        throw new Error('Spotify Premium is required to control playback.');
+      }
+      
+      throw new Error(`Failed to pause playback: ${err.response?.data?.error?.message || err.message}`);
+    }
+  }
+  async skipToNext(userId: string): Promise<boolean> {
+    const accessToken = await this.getValidAccessToken(userId);
+
+    if (!accessToken) {
+      this.logger.error('No valid access token found for user');
+      throw new Error('No valid access token found for user');
+    }
+
+    try {
+      this.logger.log(`Attempting to skip to next track for user: ${userId}`);
+      
+      await axios({
+        method: 'post',
+        url: 'https://api.spotify.com/v1/me/player/next',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      this.logger.log('Skipped to next track successfully');
+      return true;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error('Failed to skip to next track', {
+        error: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response?.status === 404) {
+        throw new Error('No active Spotify device found. Please open Spotify on a device first.');
+      }
+      
+      if (err.response?.status === 403) {
+        throw new Error('Spotify Premium is required to control playback.');
+      }
+      
+      throw new Error(`Failed to pause playback: ${err.response?.data?.error?.message || err.message}`);
+    }
+  }
+
+  async skipToPrevious(userId: string): Promise<boolean> {
+    const accessToken = await this.getValidAccessToken(userId);
+
+    if (!accessToken) {
+      this.logger.error('No valid access token found for user');
+      throw new Error('No valid access token found for user');
+    }
+
+    try {
+      this.logger.log(`Attempting to skip to previous track for user: ${userId}`);
+      
+      await axios({
+        method: 'post',
+        url: 'https://api.spotify.com/v1/me/player/previous',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      this.logger.log('Skipped to previous track successfully');
+      return true;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error('Failed to skip to previous track', {
+        error: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response?.status === 404) {
+        throw new Error('No active Spotify device found. Please open Spotify on a device first.');
+      }
+      
+      if (err.response?.status === 403) {
+        throw new Error('Spotify Premium is required to control playback.');
+      }
+      
+      throw new Error(`Failed to pause playback: ${err.response?.data?.error?.message || err.message}`);
     }
   }
 
@@ -277,13 +421,13 @@ export class SpotifyService {
 
       this.logger.log(`Searching for tracks with query: "${query}"`);
       
-      const searchQuery = encodeURIComponent(query.trim());
+      const enhancedQuery = `"${query}"`;
       
       const response = await axios({
         method: 'get',
         url: 'https://api.spotify.com/v1/search',
         params: {
-          q: searchQuery,
+          q: enhancedQuery,
           type: 'track',
           limit: limit
         },
@@ -292,6 +436,23 @@ export class SpotifyService {
         }
       });
 
+      if (!response.data?.tracks?.items?.length) {
+        const fallbackResponse = await axios({
+          method: 'get',
+          url: 'https://api.spotify.com/v1/search',
+          params: {
+            q: query,
+            type: 'track',
+            limit: limit
+          },
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        this.logger.log(`Search successful, found ${fallbackResponse.data?.tracks?.items?.length || 0} tracks`);
+        return fallbackResponse.data;
+      }
+      
       if (response.status === 200) {
         this.logger.log(`Search successful, found ${response.data?.tracks?.items?.length || 0} tracks`);
         return response.data;
@@ -309,6 +470,8 @@ export class SpotifyService {
         errorMessage: errorData?.error?.message || err.message,
         errorDetails: JSON.stringify(errorData || {})
       });
+
+      // console.log(err.response);
       
       if (status === 401) {
         this.logger.log('Access token expired, refreshing...');
@@ -350,6 +513,54 @@ export class SpotifyService {
       this.logger.error('Failed to play track', (error as any).response?.data || (error as any).message);
 
       throw new Error('Failed to fetch currently playing track');
+    }
+  }
+
+  async setVolume(userId: string, volumePercent: number): Promise<boolean> {
+    const accessToken = await this.getValidAccessToken(userId);
+
+    if (!accessToken) {
+      this.logger.error('No valid access token found for user');
+      throw new Error('No valid access token found for user');
+    }
+
+    // Ensure volume is within valid range (0-100)
+    volumePercent = Math.max(0, Math.min(100, Math.round(volumePercent)));
+
+    try {
+      this.logger.log(`Attempting to set volume to ${volumePercent}% for user: ${userId}`);
+      
+      await axios({
+        method: 'put',
+        url: 'https://api.spotify.com/v1/me/player/volume',
+        params: {
+          volume_percent: volumePercent
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      this.logger.log(`Volume set to ${volumePercent}% successfully`);
+      return true;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error('Failed to set volume', {
+        error: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response?.status === 404) {
+        throw new Error('No active Spotify device found. Please open Spotify on a device first.');
+      }
+      
+      if (err.response?.status === 403) {
+        throw new Error('Spotify Premium is required to control volume.');
+      }
+      
+      throw new Error(`Failed to set volume: ${err.response?.data?.error?.message || err.message}`);
     }
   }
 }
