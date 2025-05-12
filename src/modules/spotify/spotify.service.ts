@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig, SpotifyConfig } from 'config/configuration';
-import { SpotifyRepository } from './repository/spotify.repository';
 import axios from 'axios';
+import { SpotifyRepository } from './repository/spotify.repository';
+import { SpotifyCredentialsModel } from './models/spotify-credentials.model';
 
 @Injectable()
 export class SpotifyService {
@@ -561,6 +562,15 @@ export class SpotifyService {
       }
       
       throw new Error(`Failed to set volume: ${err.response?.data?.error?.message || err.message}`);
+    }
+  }
+
+  async getSpotifyCredentials(userId: string): Promise<SpotifyCredentialsModel | null> {
+    try {
+      return await this.spotifyRepository.getCredentialsByUserId(userId);
+    } catch (error) {
+      this.logger.error('Failed to get Spotify credentials', error);
+      throw new Error('Failed to get Spotify credentials');
     }
   }
 }

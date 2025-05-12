@@ -387,4 +387,80 @@ export class SpotifyController {
       });
     }
   }
+
+  @UseGuards(JwtGuard)
+  @Post('refresh')
+  async refreshSpotifyToken(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const isConnected = await this.spotifyService.isUserConnected(userId);
+      
+      if (!isConnected) {
+        return res.status(400).json({ 
+          message: 'No Spotify connection found. Please connect your Spotify account first.',
+          success: false
+        });
+      }
+      
+      const newAccessToken = await this.spotifyService.refreshAccessToken(userId);
+      
+      if (newAccessToken) {
+        return res.status(200).json({ 
+          message: 'Spotify token refreshed successfully',
+          success: true
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Failed to refresh Spotify token',
+          success: false
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error refreshing Spotify token:', error);
+      return res.status(500).json({
+        message: 'Internal server error while refreshing Spotify token',
+        success: false
+      });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('token-info')
+  async getSpotifyTokenInfo(@Req() req: Request, @Res() res: Response) {
+    const userId = req.user.id;
+
+    try {
+      const credentials = await this.spotifyService.getSpotifyCredentials(userId);
+      
+      if (!credentials) {
+        return res.status(404).json({ 
+          message: 'No Spotify connection found',
+          connected: false,
+          success: false
+        });
+      }
+      
+      const now = new Date();
+      const expiresAt = new Date(credentials.expiresAt);
+      const isExpired = expiresAt < now;
+      const expiresIn = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
+      
+      return res.status(200).json({
+        connected: true,
+        success: true,
+        accessToken: credentials.accessToken,
+        expiresAt: credentials.expiresAt,
+        isExpired: isExpired,
+        expiresIn: isExpired ? 0 : expiresIn,
+        connectedSince: credentials.createdAt
+      });
+    } catch (error) {
+      this.logger.error('Error retrieving Spotify token info:', error);
+      return res.status(500).json({
+        message: 'Internal server error while retrieving Spotify token info',
+        success: false
+      });
+    }
+  }
 }
