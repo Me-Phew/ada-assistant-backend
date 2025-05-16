@@ -12,6 +12,8 @@ export interface AppConfig {
   corsMaxAge: number;
   corsAllowedOrigins: string[];
   spotify: SpotifyConfig;
+  mail: MailConfig;
+  appUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -35,6 +37,14 @@ export interface SpotifyConfig {
   redirectUri: string;
 }
 
+export interface MailConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  from: string;
+}
+
 export default (): AppConfig => {
   const env = cleanEnv(process.env, {
     SECRET: str(),
@@ -50,7 +60,13 @@ export default (): AppConfig => {
     CORS_ALLOWED_ORIGINS: str({ default: 'http://localhost:3000,http://localhost:8080' }),
     SPOTIFY_CLIENT_ID: str(),
     SPOTIFY_CLIENT_SECRET: str(),
-    SPOTIFY_REDIRECT_URI: str({ default: '<my_spotify_redirec_url>/api/spotify/callback' }),
+    SPOTIFY_REDIRECT_URI: str({ default: 'http://127.0.0.1:3001/api/spotify/callback' }),
+    MAIL_HOST: str({ default: 'sandbox.smtp.mailtrap.io' }),
+    MAIL_PORT: num({ default: 2525 }),
+    MAIL_USER: str({ default: '' }),
+    MAIL_PASSWORD: str({ default: '' }),
+    MAIL_FROM: str({ default: 'noreply@adavoice.com' }),
+    APP_URL: str({ default: 'http://localhost:3001' }),
   });
 
   const config: AppConfig = {
@@ -72,6 +88,14 @@ export default (): AppConfig => {
       clientSecret: env.SPOTIFY_CLIENT_SECRET,
       redirectUri: env.SPOTIFY_REDIRECT_URI,
     },
+    mail: {
+      host: env.MAIL_HOST,
+      port: env.MAIL_PORT,
+      user: env.MAIL_USER,
+      password: env.MAIL_PASSWORD,
+      from: env.MAIL_FROM,
+    },
+    appUrl: env.APP_URL,
   };
 
   return config;

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'database/database.service';
 import { DB } from 'database/schema/db';
-import { UserCreate } from 'database/schema/users';
+import { UserCreate, UserUpdate } from 'database/schema/users';
 import { withTimestamps } from 'database/utils/datetime';
 import { Kysely } from 'kysely';
 import { getUUIDV4 } from 'utils/uuid';
@@ -25,6 +25,23 @@ export class UserRepositoy {
     const result = await this.db
       .insertInto('users')
       .values(insertable)
+      .returningAll()
+      .executeTakeFirst();
+
+    if (!result) {
+      return null;
+    }
+
+    return new UserModel(result);
+  }
+
+  async updateUser(userId: string, updateData: Partial<UserUpdate>) {
+    const updateWithTimestamps = withTimestamps({ ...updateData }, { createdAt: false });
+
+    const result = await this.db
+      .updateTable('users')
+      .set(updateWithTimestamps)
+      .where('id', '=', userId)
       .returningAll()
       .executeTakeFirst();
 

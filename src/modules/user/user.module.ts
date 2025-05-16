@@ -3,10 +3,14 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { UserResolver } from './resolvers/user.resolver';
 import { UserRepositoy } from './repository/user.respository';
+import { MailModule } from '../mail/mail.module';
+import { AuthModule } from '../auth/auth.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
+  imports: [MailModule, SharedModule],
   controllers: [UserController],
-  providers: [UserService, UserResolver, UserRepositoy], // inhject to use within the module
-  exports: [UserService, UserRepositoy], // we export here to use with AuthService
+  providers: [UserService, UserResolver, UserRepositoy],
+  exports: [UserService, UserRepositoy],
 })
 export class UserModule {}

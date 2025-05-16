@@ -5,6 +5,7 @@ import { LoginDto } from './dtos/login.dto';
 import bcrypt from 'bcrypt';
 import { LoginResponseDto } from './dtos/login-response.dto';
 import { InvalidLoginOrPasswordException } from './exceptions/invalid-login-or-password.exception';
+import { EmailNotVerifiedException } from './exceptions/email-not-verified.exception';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,10 @@ export class AuthService {
     const passwordOk = await bcrypt.compare(password, user.passwordHash);
     if (!passwordOk) {
       throw new InvalidLoginOrPasswordException();
+    }
+
+    if (!user.verified) {
+      throw new EmailNotVerifiedException();
     }
 
     const jwtPayload = { id: user.id };
