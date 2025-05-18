@@ -6,6 +6,7 @@ import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exc
 import { UserRepositoy } from './repository/user.respository';
 import { MailService } from '../mail/mail.service';
 import { EmailVerificationRepository } from '../auth/repository/email-verification.repository';
+import { UserRole } from 'database/schema/common/role.enum';
 
 const BCRYPT_HASH_ROUNDS = 10;
 
@@ -42,6 +43,7 @@ export class UserService {
       email: email.toLowerCase(),
       passwordHash,
       verified: false,
+      role: UserRole.USER,
     });
 
     // Generate verification token

@@ -76,10 +76,11 @@ async function bootstrap() {
     credentials: true
   });
 
-  app.enableCors({
-    origin: corsAllowedOrigins,
-    maxAge: corsMaxAge,
-  });
+  // app.enableCors({
+  //   origin: corsAllowedOrigins,
+  //   maxAge: corsMaxAge,
+  // });
+  
   app.enableVersioning({
     type: VersioningType.URI,
   });

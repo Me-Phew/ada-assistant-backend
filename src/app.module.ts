@@ -10,6 +10,7 @@ import configuration, {
 import { AppConfig } from './config/configuration';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtGuard } from './common/guards/jwt.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from 'modules/auth/auth.module';
 import { UserModule } from 'modules/user/user.module';
 import { GraphQLModule } from '@nestjs/graphql';
@@ -88,6 +89,11 @@ import { MailModule } from './modules/mail/mail.module';
     {
       provide: APP_GUARD,
       useClass: JwtGuard,
+    },
+    // Roles guard for authorization
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

@@ -1,5 +1,6 @@
 import { User } from 'database/schema/users';
 import { UserDto } from '../dtos/user.dto';
+import { UserRole } from 'database/schema/common/role.enum';
 
 export class UserModel implements User {
   id: string;
@@ -7,6 +8,7 @@ export class UserModel implements User {
   email: string;
   passwordHash: string;
   verified: boolean;
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 
@@ -16,6 +18,7 @@ export class UserModel implements User {
     this.email = user.email;
     this.passwordHash = user.passwordHash;
     this.verified = user.verified;
+    this.role = user.role;
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;
   }
@@ -29,12 +32,17 @@ export class UserModel implements User {
     return new Date().getFullYear() - this.createdAt.getFullYear();
   }
 
+  get isAdmin(): boolean {
+    return this.role === UserRole.ADMIN;
+  }
+
   toDto(): UserDto {
     return {
       id: this.id,
       name: this.name,
       email: this.email,
       verified: this.verified,
+      role: this.role,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

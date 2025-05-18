@@ -1,3 +1,5 @@
+import { UserRole } from 'database/schema/common/role.enum';
+
 export class UserDto {
   /**
    * User Id
@@ -33,6 +35,15 @@ export class UserDto {
    * @memberof UserDto
    */
   verified!: boolean;
+
+  /**
+   * User role
+   * 
+   * @example "user"
+   * @type {UserRole}
+   * @memberof UserDto
+   */
+  role!: UserRole;
 
   /**
    * User join date
