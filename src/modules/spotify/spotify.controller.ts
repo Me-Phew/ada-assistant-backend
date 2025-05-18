@@ -25,30 +25,47 @@ export class SpotifyController {
   }
 
   @Public()
-  @Get('callback')
-  async callback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
+  @Post('callback')
+  async handleCallbackFromFrontend(
+    @Body() body: { code: string; state: string },
     @Res() res: Response,
   ) {
-    if (error) {
-      return res.status(400).json({ message: 'Spotify authorization failed', error });
+    if (!body.code || !body.state) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing code or state parameter' 
+      });
     }
 
     try {
-      const { userId } = JSON.parse(Buffer.from(state, 'base64').toString());
+      const { userId } = JSON.parse(Buffer.from(body.state, 'base64').toString());
 
-      const success = await this.spotifyService.exchangeCodeForTokens(code, userId);
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid state parameter' 
+        });
+      }
+
+      const success = await this.spotifyService.exchangeCodeForTokens(body.code, userId);
 
       if (success) {
-        return res.status(200).json({ message: 'Spotify connected successfully' });
+        return res.status(200).json({ 
+          success: true, 
+          message: 'Spotify account connected successfully' 
+        });
       } else {
-        return res.status(400).json({ message: 'Failed to connect Spotify' });
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Failed to connect Spotify account' 
+        });
       }
-    } catch (e) {
-      console.error('Error processing Spotify callback:', e);
-      return res.status(500).json({ message: 'Internal server error' });
+    } catch (error) {
+      this.logger.error('Error processing Spotify callback from frontend:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error',
+      });
     }
   }
 
