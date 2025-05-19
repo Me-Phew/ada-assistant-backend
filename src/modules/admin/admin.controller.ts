@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../database/schema/common/role.enum';
 import { UserService } from '../user/user.service';
@@ -8,6 +8,10 @@ import { AdminDeviceService } from './services/admin-device.service';
 import { AdminFirmwareService } from './services/admin-firmware.service';
 import { CreateFirmwareDto } from './dtos/create-firmware.dto';
 import { CreateDeviceDto } from './dtos/create-device.dto';
+import { AdminCreateUserDto } from './dtos/admin-create-user.dto';
+import { EmailAlreadyTakenException } from '../user/exceptions/email-already-taken.exception';
+import { UpdateUserDto } from './dtos/update-user.dto';
+import { UserNotFoundException } from '../user/exceptions/user-not-found.exception';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -36,6 +40,49 @@ export class AdminController {
   async demoteToUser(@Param('id') id: string): Promise<UserDto> {
     const user = await this.userService.updateUserRole(id, UserRole.USER);
     return user.toDto();
+  }
+
+  @Put('users/:id')
+  @ApiOperation({ summary: 'Update a user' })
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto
+  ): Promise<UserDto> {
+    const user = await this.userService.updateUserDetails(id, updateUserDto);
+    return user.toDto();
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete a user' })
+  async deleteUser(@Param('id') id: string) {
+    try {
+      const result = await this.userService.deleteUser(id);
+      if (result) {
+        return { success: true, message: 'User deleted successfully' };
+      } else {
+        return { success: false, message: 'Failed to delete user' };
+      }
+    } catch (error) {
+      if (error instanceof UserNotFoundException) {
+        throw new NotFoundException('User not found');
+      }
+      throw error;
+    }
+  }
+
+  @Post('users')
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiCreatedResponse({ description: 'User created successfully' })
+  async createUser(@Body() createUserDto: AdminCreateUserDto) {
+    try {
+      const user = await this.userService.createUserByAdmin(createUserDto);
+      return user;
+    } catch (error) {
+      if (error instanceof EmailAlreadyTakenException) {
+        throw new ConflictException(error.message);
+      }
+      throw new InternalServerErrorException('Failed to create user');
+    }
   }
 
   @Post('firmware')

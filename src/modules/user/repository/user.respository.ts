@@ -6,6 +6,7 @@ import { withTimestamps } from 'database/utils/datetime';
 import { Kysely } from 'kysely';
 import { getUUIDV4 } from 'utils/uuid';
 import { UserModel } from '../models/user.model';
+import { UserRole } from '../../../database/schema/common/role.enum';
 
 @Injectable()
 export class UserRepositoy {
@@ -93,6 +94,25 @@ export class UserRepositoy {
   async getAllUsers() {
     const users = await this.db
       .selectFrom('users')
+      .selectAll()
+      .execute();
+
+    return users.map(user => new UserModel(user));
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const result = await this.db
+      .deleteFrom('users')
+      .where('id', '=', userId)
+      .execute();
+    
+    return result.length > 0;
+  }
+
+  async getUsersByRole(role: UserRole): Promise<UserModel[]> {
+    const users = await this.db
+      .selectFrom('users')
+      .where('role', '=', role)
       .selectAll()
       .execute();
 

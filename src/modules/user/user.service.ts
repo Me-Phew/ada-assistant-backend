@@ -9,6 +9,8 @@ import { EmailVerificationRepository } from '../auth/repository/email-verificati
 import { UserRole } from '../../database/schema/common/role.enum';
 import { UserModel } from './models/user.model';
 import { UserNotFoundException } from './exceptions/user-not-found.exception';
+import { AdminCreateUserDto } from '../../modules/admin/dtos/admin-create-user.dto';
+import { UserUpdate } from '../../database/schema/users';
 
 const BCRYPT_HASH_ROUNDS = 10;
 
@@ -127,5 +129,67 @@ export class UserService {
     }
     
     return this.userRepositoy.updateUser(userId, { role });
+  }
+
+  async createUserByAdmin(createUserDto: AdminCreateUserDto) {
+    const { email, password, role = UserRole.USER, verified = true } = createUserDto;
+
+    const prevUser = await this.userRepositoy.getUserByEmail(email.toLowerCase());
+    if (prevUser) {
+      throw new EmailAlreadyTakenException(email);
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_HASH_ROUNDS);
+
+    const user = await this.userRepositoy.createUser({
+      email: email.toLowerCase(),
+      passwordHash,
+      verified,
+      role,
+    });
+
+    this.logger.log(`Admin created user: ${user.id} (${user.email})`);
+    return user.toDto();
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const user = await this.userRepositoy.getUserById(userId);
+    
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+    
+    if (user.role === UserRole.ADMIN) {
+      const admins = await this.findUsersByRole(UserRole.ADMIN);
+      if (admins.length <= 1) {
+        throw new Error('Cannot delete the last admin user');
+      }
+    }
+    
+    const result = await this.userRepositoy.deleteUser(userId);
+    this.logger.log(`User deleted: ${userId}`);
+    
+    return result;
+  }
+
+  async findUsersByRole(role: UserRole): Promise<UserModel[]> {
+    return this.userRepositoy.getUsersByRole(role);
+  }
+
+  async updateUserDetails(userId: string, updateData: Partial<UserUpdate>): Promise<UserModel> {
+    const user = await this.userRepositoy.getUserById(userId);
+    
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+    
+    if (updateData.email && updateData.email !== user.email) {
+      const existingUser = await this.userRepositoy.getUserByEmail(updateData.email);
+      if (existingUser && existingUser.id !== userId) {
+        throw new EmailAlreadyTakenException(updateData.email);
+      }
+    }
+    
+    return this.userRepositoy.updateUser(userId, updateData);
   }
 }
