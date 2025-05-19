@@ -6,7 +6,9 @@ import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exc
 import { UserRepositoy } from './repository/user.respository';
 import { MailService } from '../mail/mail.service';
 import { EmailVerificationRepository } from '../auth/repository/email-verification.repository';
-import { UserRole } from 'database/schema/common/role.enum';
+import { UserRole } from '../../database/schema/common/role.enum';
+import { UserModel } from './models/user.model';
+import { UserNotFoundException } from './exceptions/user-not-found.exception';
 
 const BCRYPT_HASH_ROUNDS = 10;
 
@@ -111,5 +113,19 @@ export class UserService {
       (userId) =>
         userDtosMap.get(userId) || new Error(`No user found for key ${userId}`),
     );
+  }
+
+  async findAllUsers(): Promise<UserModel[]> {
+    return this.userRepositoy.getAllUsers();
+  }
+
+  async updateUserRole(userId: string, role: UserRole): Promise<UserModel> {
+    const user = await this.userRepositoy.getUserById(userId);
+    
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+    
+    return this.userRepositoy.updateUser(userId, { role });
   }
 }

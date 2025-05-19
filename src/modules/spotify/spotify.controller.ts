@@ -5,6 +5,8 @@ import { JwtGuard } from 'common/guards/jwt.guard';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from 'config/configuration';
 import { Public } from 'common/decorators';
+import { Roles } from 'common/decorators/roles.decorator';
+import { UserRole } from '../../database/schema/common/role.enum';
 
 @Controller('spotify')
 export class SpotifyController {
@@ -478,6 +480,19 @@ export class SpotifyController {
         message: 'Internal server error while retrieving Spotify token info',
         success: false
       });
+    }
+  }
+
+  @UseGuards(JwtGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('all-connections')
+  async getAllSpotifyConnections(@Res() res: Response) {
+    try {
+      const connections = await this.spotifyService.getAllConnections();
+      return res.status(200).json({ connections });
+    } catch (error) {
+      this.logger.error('Error fetching Spotify connections:', error);
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 }

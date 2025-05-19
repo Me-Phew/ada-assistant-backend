@@ -573,4 +573,14 @@ export class SpotifyService {
       throw new Error('Failed to get Spotify credentials');
     }
   }
+
+  async getAllConnections() {
+    try {
+      const allCredentials = await this.spotifyRepository.getAllCredentials();
+      return allCredentials;
+    } catch (error) {
+      this.logger.error('Error getting all Spotify connections:', error);
+      throw new Error('Failed to retrieve Spotify connections');
+    }
+  }
 }

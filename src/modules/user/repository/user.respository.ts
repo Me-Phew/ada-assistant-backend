@@ -89,4 +89,13 @@ export class UserRepositoy {
 
     return users.map((user) => new UserModel(user));
   }
+
+  async getAllUsers() {
+    const users = await this.db
+      .selectFrom('users')
+      .selectAll()
+      .execute();
+
+    return users.map(user => new UserModel(user));
+  }
 }

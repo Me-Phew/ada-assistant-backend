@@ -1,5 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { CurrentUser, Public } from 'common/decorators';
+import { CurrentUser, Public, Roles } from '../../../common/decorators';
 import { UserObject } from '../dtos/objects/user.object';
 import {
   UserRegistrationResult,
@@ -13,6 +13,7 @@ import { EmailAlreadyTakenError } from '../dtos/errors/email-already-taken-error
 import { RegisterUserInput } from '../dtos/inputs/register-user.input';
 import { User } from 'database/schema/users';
 import { UserModel } from '../models/user.model';
+import { UserRole } from '../../../database/schema/common/role.enum';
 
 @Resolver(() => UserObject)
 export class UserResolver {
@@ -44,5 +45,15 @@ export class UserResolver {
       }
       throw error;
     }
+  }
+
+  @Query(() => [UserObject], {
+    name: 'allUsers',
+    description: 'Get all users (admin only)',
+  })
+  @Roles(UserRole.ADMIN)
+  async getAllUsers(): Promise<UserObject[]> {
+    const users = await this.userService.findAllUsers();
+    return users.map(user => user.toDto());
   }
 }

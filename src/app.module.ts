@@ -22,6 +22,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { SpotifyModule } from './modules/spotify/spotify.module';
 import { MailModule } from './modules/mail/mail.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { MailModule } from './modules/mail/mail.module';
     UserModule,
     HealthModule,
     SpotifyModule,
+    AdminModule,
   ],
   providers: [
     Logger,

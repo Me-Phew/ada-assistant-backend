@@ -75,4 +75,13 @@ export class SpotifyRepository {
 
     return !!result;
   }
+
+  async getAllCredentials(): Promise<SpotifyCredentialsModel[]> {
+    const results = await this.db
+      .selectFrom('spotifyCredentials')
+      .selectAll()
+      .execute();
+
+    return results.map(result => new SpotifyCredentialsModel(result));
+  }
 }
