@@ -15,6 +15,11 @@ import { FirmwareRepository } from './repository/firmware.repository';
     DeviceRepository,
     FirmwareRepository,
   ],
-  exports: [AdminDeviceService, AdminFirmwareService],
+  exports: [
+    AdminDeviceService, 
+    AdminFirmwareService,
+    DeviceRepository,
+    FirmwareRepository,
+  ],
 })
 export class AdminModule {}

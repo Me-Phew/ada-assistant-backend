@@ -91,4 +91,62 @@ export class DeviceRepository {
     
     return result.length > 0;
   }
+
+  async getUserDevices(userId: string) {
+    return this.db
+      .selectFrom('devices')
+      .where('devices.userId', '=', userId)
+      .leftJoin(
+        'firmwareVersions as factory',
+        'factory.id',
+        'devices.factory_firmware_version'
+      )
+      .leftJoin(
+        'firmwareVersions as current',
+        'current.id',
+        'devices.current_firmware_version'
+      )
+      .select([
+        'devices.id',
+        'devices.name',
+        'devices.model',
+        'devices.serial_number',
+        'devices.board_revision',
+        'devices.lastSeen',
+        'devices.createdAt',
+        'factory.version as factoryVersion',
+        'current.version as currentVersion',
+      ])
+      .orderBy('devices.createdAt', 'desc')
+      .execute();
+  }
+
+  async getUserDeviceById(deviceId: string, userId: string) {
+    return this.db
+      .selectFrom('devices')
+      .where('devices.id', '=', deviceId)
+      .where('devices.userId', '=', userId)
+      .leftJoin(
+        'firmwareVersions as factory',
+        'factory.id',
+        'devices.factory_firmware_version'
+      )
+      .leftJoin(
+        'firmwareVersions as current',
+        'current.id',
+        'devices.current_firmware_version'
+      )
+      .select([
+        'devices.id',
+        'devices.name',
+        'devices.model',
+        'devices.serial_number',
+        'devices.board_revision',
+        'devices.lastSeen',
+        'devices.createdAt',
+        'factory.version as factoryVersion',
+        'current.version as currentVersion',
+      ])
+      .executeTakeFirst();
+  }
 }

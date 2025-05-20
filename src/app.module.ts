@@ -23,7 +23,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { SpotifyModule } from './modules/spotify/spotify.module';
 import { MailModule } from './modules/mail/mail.module';
 import { AdminModule } from './modules/admin/admin.module';
-
+import { DeviceModule } from './modules/device/device.module';
 @Module({
   imports: [
     DevtoolsModule.register({
@@ -83,6 +83,7 @@ import { AdminModule } from './modules/admin/admin.module';
     HealthModule,
     SpotifyModule,
     AdminModule,
+    DeviceModule,
   ],
   providers: [
     Logger,
