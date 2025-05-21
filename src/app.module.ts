@@ -24,6 +24,8 @@ import { SpotifyModule } from './modules/spotify/spotify.module';
 import { MailModule } from './modules/mail/mail.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DeviceModule } from './modules/device/device.module';
+import { ConversationModule } from './modules/conversation/conversation.module';
+
 @Module({
   imports: [
     DevtoolsModule.register({
@@ -84,6 +86,7 @@ import { DeviceModule } from './modules/device/device.module';
     SpotifyModule,
     AdminModule,
     DeviceModule,
+    ConversationModule,
   ],
   providers: [
     Logger,

@@ -3,6 +3,12 @@ import { SpotifyCredentialsTable } from './spotify';
 import { EmailVerificationTokenTable } from './email-verification';
 import { FirmwareVersionTable } from './firmware';
 import { DeviceTable } from './device';
+import { 
+  ConversationTable, 
+  UserMessageTable, 
+  TranscriptionTable, 
+  AssistantMessageTable 
+} from './conversation';
 
 export interface DB {
   users: UserTable;
@@ -10,4 +16,8 @@ export interface DB {
   emailVerificationTokens: EmailVerificationTokenTable;
   firmwareVersions: FirmwareVersionTable;
   devices: DeviceTable;
+  conversations: ConversationTable;
+  userMessages: UserMessageTable;
+  transcriptions: TranscriptionTable;
+  assistantMessages: AssistantMessageTable;
 }
