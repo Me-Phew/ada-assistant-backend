@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/configuration';
 import { AuthResolver } from './resolvers/auth.resolver';
 import { EmailVerificationRepository } from './repository/email-verification.repository';
+import { PasswordResetRepository } from './repository/password-reset.repository';
 import { MailModule } from '../mail/mail.module';
 import { SharedModule } from '../shared/shared.module';
 
@@ -24,7 +25,16 @@ import { SharedModule } from '../shared/shared.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthResolver, EmailVerificationRepository],
-  exports: [AuthService, EmailVerificationRepository],
+  providers: [
+    AuthService, 
+    AuthResolver, 
+    EmailVerificationRepository,
+    PasswordResetRepository
+  ],
+  exports: [
+    AuthService, 
+    EmailVerificationRepository,
+    PasswordResetRepository
+  ],
 })
 export class AuthModule {}

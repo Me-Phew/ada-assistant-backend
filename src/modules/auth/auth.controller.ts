@@ -21,13 +21,17 @@ import { InvalidLoginOrPasswordException } from './exceptions/invalid-login-or-p
 import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
 import { Response } from 'express';
 import { UserService } from '../user/user.service';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 @ApiTags('Authentication')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private configService: ConfigService,
   ) {}
 
   @Post('/login')
@@ -81,5 +85,63 @@ export class AuthController {
       success: true,
       message: 'Email verified successfully',
     });
+  }
+
+  @Post('/forgot-password')
+  @Public()
+  @ApiOperation({
+    description: 'Request a password reset link via email',
+    summary: 'Forgot password',
+  })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto
+  ): Promise<{ message: string }> {
+    await this.authService.requestPasswordReset(forgotPasswordDto.email);
+
+    return {
+      message: 'If your email is registered, you will receive a password reset link',
+    };
+  }
+
+  @Post('/reset-password')
+  @Public()
+  @ApiOperation({
+    description: 'Reset password using token received via email',
+    summary: 'Reset password',
+  })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto
+  ): Promise<{ success: boolean; message: string }> {
+    const success = await this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.password
+    );
+
+    if (success) {
+      return {
+        success: true,
+        message: 'Password has been reset successfully',
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Invalid or expired token',
+      };
+    }
+  }
+
+  @Get('/reset-password')
+  @Public()
+  @ApiOperation({
+    description: 'Redirect to frontend reset password page',
+    summary: 'Reset password redirect',
+  })
+  async resetPasswordRedirect(
+    @Query('token') token: string,
+    @Res() res: any,
+  ) {
+    const frontendUrl = this.configService.get('frontendUrl') || 'http://localhost:3000';
+
+    return res.redirect(`${frontendUrl}/reset-password?token=${token}`);
   }
 }

@@ -14,6 +14,7 @@ export interface AppConfig {
   spotify: SpotifyConfig;
   mail: MailConfig;
   appUrl: string;
+  frontendUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -60,13 +61,14 @@ export default (): AppConfig => {
     CORS_ALLOWED_ORIGINS: str({ default: 'http://localhost:3000,http://localhost:8080,http://127.0.0.1:44809' }),
     SPOTIFY_CLIENT_ID: str(),
     SPOTIFY_CLIENT_SECRET: str(),
-    SPOTIFY_REDIRECT_URI: str({ default: 'http://127.0.0.1:44809/spotifycallback' }),
+    SPOTIFY_REDIRECT_URI: str({ default: 'http://127.0.0.1:38369/spotifycallback' }),
     MAIL_HOST: str({ default: 'sandbox.smtp.mailtrap.io' }),
     MAIL_PORT: num({ default: 2525 }),
     MAIL_USER: str({ default: '' }),
     MAIL_PASSWORD: str({ default: '' }),
     MAIL_FROM: str({ default: 'noreply@adavoice.com' }),
     APP_URL: str({ default: 'http://localhost:3001' }),
+    FRONTEND_URL: str({ default: 'http://localhost:3000' }),
   });
 
   const config: AppConfig = {
@@ -96,6 +98,7 @@ export default (): AppConfig => {
       from: env.MAIL_FROM,
     },
     appUrl: env.APP_URL,
+    frontendUrl: env.FRONTEND_URL,
   };
 
   return config;
