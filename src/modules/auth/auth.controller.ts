@@ -24,6 +24,8 @@ import { UserService } from '../user/user.service';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ConfigService } from '@nestjs/config';
+import { ChangePasswordDto } from './dtos/change-password.dto';
+import { User } from '../../database/schema/users';
 
 @Controller('auth')
 @ApiTags('Authentication')
@@ -143,5 +145,34 @@ export class AuthController {
     const frontendUrl = this.configService.get('frontendUrl') || 'http://localhost:3000';
 
     return res.redirect(`${frontendUrl}/reset-password?token=${token}`);
+  }
+
+  @Post('/change-password')
+  @ApiBearerAuth()
+  @ApiOperation({
+    description: 'Change user password when logged in',
+    summary: 'Change password',
+  })
+  async changePassword(
+    @CurrentUser() user: User,
+    @Body() changePasswordDto: ChangePasswordDto
+  ): Promise<{ success: boolean; message: string }> {
+    const success = await this.authService.changePassword(
+      user.id,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword
+    );
+    
+    if (success) {
+      return {
+        success: true,
+        message: 'Password has been changed successfully',
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Failed to change password. Please check your current password.',
+      };
+    }
   }
 }

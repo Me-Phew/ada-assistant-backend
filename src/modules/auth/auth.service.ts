@@ -102,4 +102,21 @@ export class AuthService {
 
     return true;
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.userService.findUserById(userId);
+    
+    if (!user) {
+      return false;
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      return false;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    return this.userService.updateUserPassword(userId, passwordHash);
+  }
 }
