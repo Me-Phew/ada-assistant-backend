@@ -12,15 +12,12 @@ import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Public } from 'common/decorators';
 import { ApiUnauthorizedException } from 'common/decorators/api-unauthorized-exception.decorator';
-import {
-  ApiUnknownErrorException,
-  ApiUnknownErrorException,
-} from 'common/decorators/api-unknown-error-exception.decorator';
+import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
 import { TemplatedApiException } from 'common/decorators/templated-api-exception.decorator';
-import { Response, Response } from 'express';
+import { Response } from 'express';
 import { User } from '../../database/schema/users';
 import { UserDto } from '../user/dtos/user.dto';
-import { UserService, UserService } from '../user/user.service';
+import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import { CurrentUserDto } from './dtos/current-user.dto';
