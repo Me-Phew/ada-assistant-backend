@@ -1,16 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RegisterUserDto } from './dtos/register-user.dto';
 import bcrypt from 'bcrypt';
-import { UserObject } from './dtos/objects/user.object';
-import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exception';
-import { UserRepositoy } from './repository/user.respository';
-import { MailService } from '../mail/mail.service';
-import { EmailVerificationRepository } from '../auth/repository/email-verification.repository';
 import { UserRole } from '../../database/schema/common/role.enum';
-import { UserModel } from './models/user.model';
-import { UserNotFoundException } from './exceptions/user-not-found.exception';
-import { AdminCreateUserDto } from '../../modules/admin/dtos/admin-create-user.dto';
 import { UserUpdate } from '../../database/schema/users';
+import { AdminCreateUserDto } from '../../modules/admin/dtos/admin-create-user.dto';
+import { EmailVerificationRepository } from '../auth/repository/email-verification.repository';
+import { MailService } from '../mail/mail.service';
+import { UserObject } from './dtos/objects/user.object';
+import { RegisterUserDto } from './dtos/register-user.dto';
+import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exception';
+import { UserNotFoundException } from './exceptions/user-not-found.exception';
+import { UserModel } from './models/user.model';
+import { UserRepositoy } from './repository/user.respository';
 
 const BCRYPT_HASH_ROUNDS = 10;
 
@@ -21,7 +21,7 @@ export class UserService {
   constructor(
     private readonly userRepositoy: UserRepositoy,
     private readonly mailService: MailService,
-    private readonly emailVerificationRepository: EmailVerificationRepository
+    private readonly emailVerificationRepository: EmailVerificationRepository,
   ) {}
 
   /**
@@ -51,8 +51,9 @@ export class UserService {
     });
 
     // Generate verification token
-    const token = await this.emailVerificationRepository.createVerificationToken(user.id);
-    
+    const token =
+      await this.emailVerificationRepository.createVerificationToken(user.id);
+
     // Send verification email using Mailtrap
     await this.mailService.sendVerificationEmail(user.email, token);
     this.logger.log(`Verification email sent to ${user.email}`);
@@ -62,8 +63,9 @@ export class UserService {
 
   async verifyEmail(token: string): Promise<boolean> {
     // Find the token
-    const verificationToken = await this.emailVerificationRepository.findByToken(token);
-    
+    const verificationToken =
+      await this.emailVerificationRepository.findByToken(token);
+
     if (!verificationToken) {
       this.logger.warn(`Invalid verification token: ${token}`);
       return false;
@@ -72,13 +74,15 @@ export class UserService {
     // Check if token is expired
     const now = new Date();
     if (now > verificationToken.expiresAt) {
-      this.logger.warn(`Expired verification token for user ${verificationToken.userId}`);
+      this.logger.warn(
+        `Expired verification token for user ${verificationToken.userId}`,
+      );
       return false;
     }
 
     // Update user as verified
     const user = await this.userRepositoy.getUserById(verificationToken.userId);
-    
+
     if (!user) {
       this.logger.warn(`User not found for verification token: ${token}`);
       return false;
@@ -86,10 +90,10 @@ export class UserService {
 
     await this.userRepositoy.updateUser(user.id, { verified: true });
     this.logger.log(`Email verified for user ${user.email}`);
-    
+
     // Delete the used token
     await this.emailVerificationRepository.deleteByUserId(user.id);
-    
+
     return true;
   }
 
@@ -123,18 +127,25 @@ export class UserService {
 
   async updateUserRole(userId: string, role: UserRole): Promise<UserModel> {
     const user = await this.userRepositoy.getUserById(userId);
-    
+
     if (!user) {
       throw new UserNotFoundException();
     }
-    
+
     return this.userRepositoy.updateUser(userId, { role });
   }
 
   async createUserByAdmin(createUserDto: AdminCreateUserDto) {
-    const { email, password, role = UserRole.USER, verified = true } = createUserDto;
+    const {
+      email,
+      password,
+      role = UserRole.USER,
+      verified = true,
+    } = createUserDto;
 
-    const prevUser = await this.userRepositoy.getUserByEmail(email.toLowerCase());
+    const prevUser = await this.userRepositoy.getUserByEmail(
+      email.toLowerCase(),
+    );
     if (prevUser) {
       throw new EmailAlreadyTakenException(email);
     }
@@ -154,21 +165,21 @@ export class UserService {
 
   async deleteUser(userId: string): Promise<boolean> {
     const user = await this.userRepositoy.getUserById(userId);
-    
+
     if (!user) {
       throw new UserNotFoundException();
     }
-    
+
     if (user.role === UserRole.ADMIN) {
       const admins = await this.findUsersByRole(UserRole.ADMIN);
       if (admins.length <= 1) {
         throw new Error('Cannot delete the last admin user');
       }
     }
-    
+
     const result = await this.userRepositoy.deleteUser(userId);
     this.logger.log(`User deleted: ${userId}`);
-    
+
     return result;
   }
 
@@ -176,20 +187,25 @@ export class UserService {
     return this.userRepositoy.getUsersByRole(role);
   }
 
-  async updateUserDetails(userId: string, updateData: Partial<UserUpdate>): Promise<UserModel> {
+  async updateUserDetails(
+    userId: string,
+    updateData: Partial<UserUpdate>,
+  ): Promise<UserModel> {
     const user = await this.userRepositoy.getUserById(userId);
-    
+
     if (!user) {
       throw new UserNotFoundException();
     }
-    
+
     if (updateData.email && updateData.email !== user.email) {
-      const existingUser = await this.userRepositoy.getUserByEmail(updateData.email);
+      const existingUser = await this.userRepositoy.getUserByEmail(
+        updateData.email,
+      );
       if (existingUser && existingUser.id !== userId) {
         throw new EmailAlreadyTakenException(updateData.email);
       }
     }
-    
+
     return this.userRepositoy.updateUser(userId, updateData);
   }
 }

@@ -1,8 +1,8 @@
-import { UserTable } from './users';
-import { SpotifyCredentialsTable } from './spotify';
+import { DeviceTable } from './device';
 import { EmailVerificationTokenTable } from './email-verification';
 import { FirmwareVersionTable } from './firmware';
-import { DeviceTable } from './device';
+import { SpotifyCredentialsTable } from './spotify';
+import { UserTable } from './users';
 
 export interface DB {
   users: UserTable;

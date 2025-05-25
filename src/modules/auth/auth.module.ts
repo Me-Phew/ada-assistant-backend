@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { UserModule } from '../user/user.module';
-import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from '../../config/configuration';
-import { AuthResolver } from './resolvers/auth.resolver';
-import { EmailVerificationRepository } from './repository/email-verification.repository';
 import { MailModule } from '../mail/mail.module';
 import { SharedModule } from '../shared/shared.module';
+import { UserModule } from '../user/user.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { EmailVerificationRepository } from './repository/email-verification.repository';
+import { AuthResolver } from './resolvers/auth.resolver';
 
 @Module({
   imports: [

@@ -1,13 +1,13 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { UserService } from './user.service';
-import { RegisterUserDto as RegisterUserDto } from './dtos/register-user.dto';
-import { MessageDto } from '../../common/dtos/message.dto';
 import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../../common/decorators';
-import { ApiValidationException } from 'common/decorators/api-validation-exception.decorator';
 import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
+import { ApiValidationException } from 'common/decorators/api-validation-exception.decorator';
+import { Public } from '../../common/decorators';
 import { TemplatedApiException } from '../../common/decorators/templated-api-exception.decorator';
+import { MessageDto } from '../../common/dtos/message.dto';
+import { RegisterUserDto } from './dtos/register-user.dto';
 import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exception';
+import { UserService } from './user.service';
 
 @Controller('users')
 @ApiTags('Users')

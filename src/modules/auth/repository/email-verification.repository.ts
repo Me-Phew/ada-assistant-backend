@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { DatabaseService } from 'database/database.service';
 import { DB } from 'database/schema/db';
+import {
+  EmailVerificationToken,
+  EmailVerificationTokenCreate,
+} from 'database/schema/email-verification';
+import { withTimestamps } from 'database/utils/datetime';
 import { Kysely } from 'kysely';
 import { getUUIDV4 } from 'utils/uuid';
-import { withTimestamps } from 'database/utils/datetime';
-import { EmailVerificationTokenCreate, EmailVerificationToken } from 'database/schema/email-verification';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class EmailVerificationRepository {
@@ -18,7 +21,7 @@ export class EmailVerificationRepository {
   async createVerificationToken(userId: string): Promise<string> {
     const id = getUUIDV4();
     const token = crypto.randomBytes(32).toString('hex');
-    
+
     // Set expiration to 24 hours from now
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);

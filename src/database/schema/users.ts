@@ -1,5 +1,5 @@
-import { CreatedAt, UpdatedAt } from './common/datetime';
 import { Generated, Insertable, Selectable, Updateable } from 'kysely';
+import { CreatedAt, UpdatedAt } from './common/datetime';
 import { UserRole } from './common/role.enum';
 
 export interface UserTable {

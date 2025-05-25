@@ -1,12 +1,21 @@
-import { Controller, Get, Post, Query, Res, Req, UseGuards, Body, Logger } from '@nestjs/common';
-import { Response, Request } from 'express';
-import { SpotifyService } from './spotify.service';
-import { JwtGuard } from 'common/guards/jwt.guard';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppConfig } from 'config/configuration';
 import { Public } from 'common/decorators';
 import { Roles } from 'common/decorators/roles.decorator';
+import { JwtGuard } from 'common/guards/jwt.guard';
+import { AppConfig } from 'config/configuration';
+import { Request, Response } from 'express';
 import { UserRole } from '../../database/schema/common/role.enum';
+import { SpotifyService } from './spotify.service';
 
 @Controller('spotify')
 export class SpotifyController {
@@ -33,39 +42,47 @@ export class SpotifyController {
     @Res() res: Response,
   ) {
     if (!body.code || !body.state) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing code or state parameter' 
+      return res.status(400).json({
+        success: false,
+        message: 'Missing code or state parameter',
       });
     }
 
     try {
-      const { userId } = JSON.parse(Buffer.from(body.state, 'base64').toString());
+      const { userId } = JSON.parse(
+        Buffer.from(body.state, 'base64').toString(),
+      );
 
       if (!userId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid state parameter' 
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid state parameter',
         });
       }
 
-      const success = await this.spotifyService.exchangeCodeForTokens(body.code, userId);
+      const success = await this.spotifyService.exchangeCodeForTokens(
+        body.code,
+        userId,
+      );
 
       if (success) {
-        return res.status(200).json({ 
-          success: true, 
-          message: 'Spotify account connected successfully' 
+        return res.status(200).json({
+          success: true,
+          message: 'Spotify account connected successfully',
         });
       } else {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Failed to connect Spotify account' 
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to connect Spotify account',
         });
       }
     } catch (error) {
-      this.logger.error('Error processing Spotify callback from frontend:', error);
-      return res.status(500).json({ 
-        success: false, 
+      this.logger.error(
+        'Error processing Spotify callback from frontend:',
+        error,
+      );
+      return res.status(500).json({
+        success: false,
         message: 'Internal server error',
       });
     }
@@ -78,64 +95,79 @@ export class SpotifyController {
     @Res() res: Response,
   ) {
     const userId = req.user.id;
-    
+
     try {
-      this.logger.log(`Play request received with body: ${JSON.stringify(body)}`);
-      
+      this.logger.log(
+        `Play request received with body: ${JSON.stringify(body)}`,
+      );
+
       if (!body.query) {
-        return res.status(400).json({ 
-          message: 'Query parameter is required', 
-          success: false 
+        return res.status(400).json({
+          message: 'Query parameter is required',
+          success: false,
         });
       }
-      
+
       try {
-        const searchResults = await this.spotifyService.searchTracks(userId, body.query, 20);
-        
+        const searchResults = await this.spotifyService.searchTracks(
+          userId,
+          body.query,
+          20,
+        );
+
         if (!searchResults?.tracks?.items?.length) {
-          return res.status(404).json({ 
-            message: `No tracks found matching query: "${body.query}"`, 
-            success: false 
+          return res.status(404).json({
+            message: `No tracks found matching query: "${body.query}"`,
+            success: false,
           });
         }
-        
+
         // Try to find the best match by looking for artist + track name matches
         const tracks = searchResults.tracks.items;
         let bestMatch = tracks[0];
-        
+
         // Extract artist and track name from the query (if in format "Artist track name")
         const queryLower = body.query.toLowerCase();
         const queryParts = queryLower.split(' ');
-        
+
         if (queryParts.length > 1) {
           // Try to find tracks where both artist and track name match parts of the query
-          const betterMatches = tracks.filter(track => {
-            const artistNamesLower = track.artists.map(a => a.name.toLowerCase());
+          const betterMatches = tracks.filter((track) => {
+            const artistNamesLower = track.artists.map((a) =>
+              a.name.toLowerCase(),
+            );
             const trackNameLower = track.name.toLowerCase();
-            
+
             // Check if any artist name is found in the query
-            const artistMatch = artistNamesLower.some(name => queryLower.includes(name));
+            const artistMatch = artistNamesLower.some((name) =>
+              queryLower.includes(name),
+            );
             // Check if track name is found in the query
-            const trackMatch = queryParts.some(part => 
-              trackNameLower.includes(part) && part.length > 3);
-              
+            const trackMatch = queryParts.some(
+              (part) => trackNameLower.includes(part) && part.length > 3,
+            );
+
             return artistMatch && trackMatch;
           });
-          
+
           if (betterMatches.length > 0) {
             bestMatch = betterMatches[0];
-            this.logger.log(`Found better match: "${bestMatch.artists[0].name} - ${bestMatch.name}"`);
+            this.logger.log(
+              `Found better match: "${bestMatch.artists[0].name} - ${bestMatch.name}"`,
+            );
           }
         }
-        
-        this.logger.log(`Selected track to play: "${bestMatch.artists[0].name} - ${bestMatch.name}"`);
-        
+
+        this.logger.log(
+          `Selected track to play: "${bestMatch.artists[0].name} - ${bestMatch.name}"`,
+        );
+
         try {
           const trackUri = bestMatch.uri;
           const success = await this.spotifyService.playTrack(userId, trackUri);
-        
+
           if (success) {
-            return res.status(200).json({ 
+            return res.status(200).json({
               message: 'Track is playing',
               success: true,
               track: {
@@ -143,39 +175,39 @@ export class SpotifyController {
                 artist: bestMatch.artists[0].name,
                 album: bestMatch.album.name,
                 uri: trackUri,
-                image: bestMatch.album.images[0]?.url
-              }
+                image: bestMatch.album.images[0]?.url,
+              },
             });
           } else {
-            return res.status(400).json({ 
-              message: 'Failed to play track', 
-              success: false 
+            return res.status(400).json({
+              message: 'Failed to play track',
+              success: false,
             });
           }
         } catch (playError) {
           const errorMessage = (playError as Error).message;
           this.logger.error(`Error playing track: ${errorMessage}`);
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: errorMessage || 'Failed to play track',
             success: false,
-            error: 'PLAYBACK_ERROR'
+            error: 'PLAYBACK_ERROR',
           });
         }
       } catch (searchError) {
         const errorMessage = (searchError as Error).message;
         this.logger.error(`Error searching tracks: ${errorMessage}`);
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: errorMessage || 'Failed to search for tracks',
           success: false,
-          error: 'SEARCH_ERROR'
+          error: 'SEARCH_ERROR',
         });
       }
     } catch (error) {
       this.logger.error('Error playing track:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Error playing track',
         success: false,
-        error: (error as Error).message
+        error: (error as Error).message,
       });
     }
   }
@@ -203,9 +235,13 @@ export class SpotifyController {
       const success = await this.spotifyService.disconnectSpotify(userId);
 
       if (success) {
-        return res.status(200).json({ message: 'Spotify disconnected successfully' });
+        return res
+          .status(200)
+          .json({ message: 'Spotify disconnected successfully' });
       } else {
-        return res.status(400).json({ message: 'Failed to disconnect Spotify' });
+        return res
+          .status(400)
+          .json({ message: 'Failed to disconnect Spotify' });
       }
     } catch (error) {
       console.error('Error disconnecting Spotify:', error);
@@ -221,14 +257,15 @@ export class SpotifyController {
     try {
       // First disconnect
       await this.spotifyService.disconnectSpotify(userId);
-      
+
       // Then generate a new auth URL
       const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
       const authUrl = this.spotifyService.getAuthorizationUrl(userId, state);
-      
-      return res.status(200).json({ 
-        message: 'Please reconnect your Spotify account with the required permissions',
-        authUrl: authUrl
+
+      return res.status(200).json({
+        message:
+          'Please reconnect your Spotify account with the required permissions',
+        authUrl: authUrl,
       });
     } catch (error) {
       this.logger.error('Error reconnecting Spotify:', error);
@@ -242,10 +279,13 @@ export class SpotifyController {
     const userId = req.user.id;
 
     try {
-      const currentlyPlaying = await this.spotifyService.getCurrentlyPlaying(userId);
+      const currentlyPlaying =
+        await this.spotifyService.getCurrentlyPlaying(userId);
 
       if (!currentlyPlaying) {
-        return res.status(200).json({ message: 'No track is currently playing' });
+        return res
+          .status(200)
+          .json({ message: 'No track is currently playing' });
       }
 
       return res.status(200).json(currentlyPlaying);
@@ -264,21 +304,21 @@ export class SpotifyController {
       const success = await this.spotifyService.pausePlayback(userId);
 
       if (success) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Playback paused',
-          success: true
+          success: true,
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to pause playback',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error pausing playback:', error);
       return res.status(500).json({
         message: (error as Error).message || 'Internal server error',
-        success: false
+        success: false,
       });
     }
   }
@@ -292,21 +332,21 @@ export class SpotifyController {
       const success = await this.spotifyService.resumePlayback(userId);
 
       if (success) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Playback resumed',
-          success: true
+          success: true,
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to resume playback',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error resuming playback:', error);
       return res.status(500).json({
         message: (error as Error).message || 'Internal server error',
-        success: false
+        success: false,
       });
     }
   }
@@ -320,21 +360,21 @@ export class SpotifyController {
       const success = await this.spotifyService.skipToNext(userId);
 
       if (success) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Skipped to next track',
-          success: true
+          success: true,
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to skip to next track',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error skipping to next track:', error);
       return res.status(500).json({
         message: (error as Error).message || 'Internal server error',
-        success: false
+        success: false,
       });
     }
   }
@@ -348,21 +388,21 @@ export class SpotifyController {
       const success = await this.spotifyService.skipToPrevious(userId);
 
       if (success) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Skipped to previous track',
-          success: true
+          success: true,
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to skip to previous track',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error skipping to previous track:', error);
       return res.status(500).json({
         message: (error as Error).message || 'Internal server error',
-        success: false
+        success: false,
       });
     }
   }
@@ -378,31 +418,31 @@ export class SpotifyController {
 
     try {
       if (typeof body.volume !== 'number' || isNaN(body.volume)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Volume must be a number between 0 and 100',
-          success: false
+          success: false,
         });
       }
 
       const success = await this.spotifyService.setVolume(userId, body.volume);
 
       if (success) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: `Volume set to ${Math.round(body.volume)}%`,
           success: true,
-          volume: Math.round(body.volume)
+          volume: Math.round(body.volume),
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to set volume',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error setting volume:', error);
       return res.status(500).json({
         message: (error as Error).message || 'Internal server error',
-        success: false
+        success: false,
       });
     }
   }
@@ -414,32 +454,34 @@ export class SpotifyController {
 
     try {
       const isConnected = await this.spotifyService.isUserConnected(userId);
-      
+
       if (!isConnected) {
-        return res.status(400).json({ 
-          message: 'No Spotify connection found. Please connect your Spotify account first.',
-          success: false
+        return res.status(400).json({
+          message:
+            'No Spotify connection found. Please connect your Spotify account first.',
+          success: false,
         });
       }
-      
-      const newAccessToken = await this.spotifyService.refreshAccessToken(userId);
-      
+
+      const newAccessToken =
+        await this.spotifyService.refreshAccessToken(userId);
+
       if (newAccessToken) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Spotify token refreshed successfully',
-          success: true
+          success: true,
         });
       } else {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Failed to refresh Spotify token',
-          success: false
+          success: false,
         });
       }
     } catch (error) {
       this.logger.error('Error refreshing Spotify token:', error);
       return res.status(500).json({
         message: 'Internal server error while refreshing Spotify token',
-        success: false
+        success: false,
       });
     }
   }
@@ -450,21 +492,24 @@ export class SpotifyController {
     const userId = req.user.id;
 
     try {
-      const credentials = await this.spotifyService.getSpotifyCredentials(userId);
-      
+      const credentials =
+        await this.spotifyService.getSpotifyCredentials(userId);
+
       if (!credentials) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           message: 'No Spotify connection found',
           connected: false,
-          success: false
+          success: false,
         });
       }
-      
+
       const now = new Date();
       const expiresAt = new Date(credentials.expiresAt);
       const isExpired = expiresAt < now;
-      const expiresIn = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
-      
+      const expiresIn = Math.floor(
+        (expiresAt.getTime() - now.getTime()) / 1000,
+      );
+
       return res.status(200).json({
         connected: true,
         success: true,
@@ -472,13 +517,13 @@ export class SpotifyController {
         expiresAt: credentials.expiresAt,
         isExpired: isExpired,
         expiresIn: isExpired ? 0 : expiresIn,
-        connectedSince: credentials.createdAt
+        connectedSince: credentials.createdAt,
       });
     } catch (error) {
       this.logger.error('Error retrieving Spotify token info:', error);
       return res.status(500).json({
         message: 'Internal server error while retrieving Spotify token info',
-        success: false
+        success: false,
       });
     }
   }

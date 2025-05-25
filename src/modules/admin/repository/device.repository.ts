@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { DatabaseService } from 'database/database.service';
-import { Kysely } from 'kysely';
 import { DB } from 'database/schema/db';
 import { withTimestamps } from 'database/utils/datetime';
-import { getUUIDV4 } from 'utils/uuid';
+import { Kysely } from 'kysely';
 import { generateSerialNumber } from 'utils/serial-number';
+import { getUUIDV4 } from 'utils/uuid';
 
 @Injectable()
 export class DeviceRepository {
@@ -52,12 +53,12 @@ export class DeviceRepository {
       .leftJoin(
         'firmwareVersions as factory',
         'factory.id',
-        'devices.factory_firmware_version'
+        'devices.factory_firmware_version',
       )
       .leftJoin(
         'firmwareVersions as current',
         'current.id',
-        'devices.current_firmware_version'
+        'devices.current_firmware_version',
       )
       .select([
         'devices.id',
@@ -83,12 +84,20 @@ export class DeviceRepository {
       .executeTakeFirst();
   }
 
+  async getDeviceBySerialNumber(serialNumber: string) {
+    return this.db
+      .selectFrom('devices')
+      .where('devices.serial_number', '=', serialNumber)
+      .selectAll()
+      .executeTakeFirst();
+  }
+
   async deleteDevice(id: string): Promise<boolean> {
     const result = await this.db
       .deleteFrom('devices')
       .where('id', '=', id)
       .execute();
-    
+
     return result.length > 0;
   }
 
@@ -99,12 +108,12 @@ export class DeviceRepository {
       .leftJoin(
         'firmwareVersions as factory',
         'factory.id',
-        'devices.factory_firmware_version'
+        'devices.factory_firmware_version',
       )
       .leftJoin(
         'firmwareVersions as current',
         'current.id',
-        'devices.current_firmware_version'
+        'devices.current_firmware_version',
       )
       .select([
         'devices.id',
@@ -129,12 +138,12 @@ export class DeviceRepository {
       .leftJoin(
         'firmwareVersions as factory',
         'factory.id',
-        'devices.factory_firmware_version'
+        'devices.factory_firmware_version',
       )
       .leftJoin(
         'firmwareVersions as current',
         'current.id',
-        'devices.current_firmware_version'
+        'devices.current_firmware_version',
       )
       .select([
         'devices.id',
@@ -147,6 +156,42 @@ export class DeviceRepository {
         'factory.version as factoryVersion',
         'current.version as currentVersion',
       ])
+      .executeTakeFirst();
+  }
+
+  async pairDeviceWithUser(serialNumber: string, userId: string) {
+    const result = await this.db
+      .updateTable('devices')
+      .set({ userId })
+      .where('serial_number', '=', serialNumber)
+      .returningAll()
+      .executeTakeFirst();
+
+    return result;
+  }
+
+  async createPairingToken(serialNumber: string) {
+    const token = crypto.randomBytes(16).toString('hex');
+    const pairedAt = new Date();
+
+    await this.db
+      .updateTable('devices')
+      .set({ pairingToken: token })
+      .set('pairedAt', pairedAt)
+      .where('serial_number', '=', serialNumber)
+      .execute();
+
+    return {
+      token,
+      pairedAt,
+    };
+  }
+
+  async getDeviceByPairingToken(token: string) {
+    return this.db
+      .selectFrom('devices')
+      .where('devices.pairingToken', '=', token)
+      .selectAll()
       .executeTakeFirst();
   }
 }

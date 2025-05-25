@@ -1,5 +1,5 @@
-import { CreatedAt, UpdatedAt } from './common/datetime';
 import { Generated, Insertable, Selectable, Updateable } from 'kysely';
+import { CreatedAt, UpdatedAt } from './common/datetime';
 
 export interface DeviceTable {
   id: Generated<string>;
@@ -13,6 +13,8 @@ export interface DeviceTable {
   lastSeen?: Date;
   createdAt: CreatedAt;
   updatedAt: UpdatedAt;
+  pairingToken?: string;
+  pairedAt?: Date;
 }
 
 export type Device = Selectable<DeviceTable>;

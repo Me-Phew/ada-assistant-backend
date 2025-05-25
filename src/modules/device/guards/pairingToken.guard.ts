@@ -9,15 +9,15 @@ import { Reflector } from '@nestjs/core';
 import { getRequest } from 'common/graphql/context';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
-import { AuthService } from '../../modules/auth/auth.service';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { NON_PAIRED_DEVICE_KEY } from '../decorators/non-paired-device.decorator';
+import { DeviceService } from './../device.service';
 
 @Injectable()
-export class JwtGuard implements CanActivate {
-  private readonly logger = new Logger(JwtGuard.name);
+export class DeviceGuard implements CanActivate {
+  private readonly logger = new Logger(DeviceGuard.name);
 
   constructor(
-    private readonly authService: AuthService,
+    private readonly deviceService: DeviceService,
     private reflector: Reflector,
   ) {}
 
@@ -25,45 +25,42 @@ export class JwtGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     try {
-      const isPublic = this.reflector.getAllAndOverride<boolean>(
-        IS_PUBLIC_KEY,
+      const isForNonPairedDevice = this.reflector.getAllAndOverride<boolean>(
+        NON_PAIRED_DEVICE_KEY,
         [context.getHandler(), context.getClass()],
       );
-      if (isPublic) {
+      if (isForNonPairedDevice) {
         return true;
       }
-
       const req = getRequest(context);
       return this.validateRequest(req);
     } catch (error) {
-      this.logger.error('Error in JWTGuard', error);
+      this.logger.error('Error in DeviceGuard', error);
       return false;
     }
   }
 
   async validateRequest(req: Request) {
-    let token: string | undefined;
     const authHeader = req.header('authorization');
-    if (authHeader) {
-      const [method, tokenValue] = authHeader.split(' ');
-      if (method === 'Bearer' && tokenValue) {
-        token = tokenValue;
-      }
-    }
 
-    if (!token && req.query && typeof req.query.token === 'string') {
-      token = req.query.token;
-    }
+    this.logger.log('Auth Header:', authHeader);
 
-    if (!token) {
+    if (!authHeader) {
       throw new UnauthorizedException();
     }
 
-    const user = await this.authService.authenticateWithJwt(token);
-    if (!user) {
+    const [method, token] = authHeader.split(' ');
+
+    if (method !== 'PairingKey') {
       throw new UnauthorizedException();
     }
-    req.user = user;
+
+    const device = await this.deviceService.authenticateWithPairingToken(token);
+    if (!device) {
+      return false;
+    }
+
+    req.device = device;
     return true;
   }
 }

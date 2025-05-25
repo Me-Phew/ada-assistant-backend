@@ -1,9 +1,20 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtGuard } from '../../common/guards/jwt.guard';
-import { CurrentUser } from '../../common/decorators';
-import { DeviceService } from './device.service';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Device } from 'database/schema/device';
+import { CurrentUser, Public } from '../../common/decorators';
 import { User } from '../../database/schema/users';
+import { CurrentDevice } from './decorators/current-device.decorator';
+import { DeviceService } from './device.service';
+import { PairDto } from './dtos/inputs/pair.dto';
+import { DeviceGuard } from './guards/pairingToken.guard';
 
 @ApiTags('User Devices')
 @ApiBearerAuth()
@@ -18,11 +29,37 @@ export class DeviceController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific device assigned to the current user' })
+  @ApiOperation({
+    summary: 'Get a specific device assigned to the current user',
+  })
   async getUserDevice(
     @Param('id') deviceId: string,
-    @CurrentUser() user: User
+    @CurrentUser() user: User,
   ) {
     return this.deviceService.getUserDevice(deviceId, user.id);
+  }
+
+  @Post('/pair')
+  @ApiOperation({
+    summary: 'Pair a device with the current user',
+  })
+  @Public()
+  @HttpCode(200)
+  async pairDevice(@Body() pairDto: PairDto) {
+    return this.deviceService.pairDevice(pairDto);
+  }
+
+  @UseGuards(DeviceGuard)
+  @Post('/heartbeat')
+  @ApiOperation({
+    summary: 'Send a heartbeat signal from the device',
+  })
+  @Public()
+  async sendHeartbeat(@CurrentDevice() device: Device) {
+    // Logic to handle heartbeat signal
+    return {
+      message: 'Heartbeat received',
+      deviceId: device.id,
+    };
   }
 }

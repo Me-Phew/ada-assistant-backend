@@ -1,6 +1,7 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws'; // Import WsAdapter
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
@@ -46,6 +47,8 @@ async function bootstrap() {
     },
   };
 
+  app.useWebSocketAdapter(new WsAdapter(app));
+
   app.useLogger(app.get(Logger));
   app.use(
     helmet({
@@ -58,12 +61,12 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       console.log('Origin attempting to connect:', origin);
-      
+
       if (!origin) {
         callback(null, true);
         return;
       }
-      
+
       if (corsAllowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -73,14 +76,14 @@ async function bootstrap() {
       }
     },
     maxAge: corsMaxAge,
-    credentials: true
+    credentials: true,
   });
 
   // app.enableCors({
   //   origin: corsAllowedOrigins,
   //   maxAge: corsMaxAge,
   // });
-  
+
   app.enableVersioning({
     type: VersioningType.URI,
   });

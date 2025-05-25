@@ -1,33 +1,33 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
-  Get,
+  Post,
   Query,
   Res,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Public, CurrentUser } from 'common/decorators';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser, Public } from 'common/decorators';
+import { ApiUnauthorizedException } from 'common/decorators/api-unauthorized-exception.decorator';
+import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
+import { TemplatedApiException } from 'common/decorators/templated-api-exception.decorator';
+import { Response } from 'express';
 import { UserDto } from '../user/dtos/user.dto';
+import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
+import { CurrentUserDto } from './dtos/current-user.dto';
 import { LoginResponseDto } from './dtos/login-response.dto';
 import { LoginDto } from './dtos/login.dto';
-import { CurrentUserDto } from './dtos/current-user.dto';
-import { ApiUnauthorizedException } from 'common/decorators/api-unauthorized-exception.decorator';
-import { TemplatedApiException } from 'common/decorators/templated-api-exception.decorator';
 import { InvalidLoginOrPasswordException } from './exceptions/invalid-login-or-password.exception';
-import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
-import { Response } from 'express';
-import { UserService } from '../user/user.service';
 
 @Controller('auth')
 @ApiTags('Authentication')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
   ) {}
 
   @Post('/login')
@@ -57,10 +57,7 @@ export class AuthController {
     description: 'Verify email address using token',
     summary: 'Verify email address',
   })
-  async verifyEmail(
-    @Query('token') token: string,
-    @Res() res: Response,
-  ) {
+  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
     if (!token) {
       return res.status(400).send({
         success: false,

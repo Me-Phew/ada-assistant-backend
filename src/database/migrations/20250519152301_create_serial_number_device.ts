@@ -7,7 +7,9 @@ export async function up(db: Kysely<DB>): Promise<void> {
   await db.schema
     .alterTable(tableName)
     .addColumn('serial_number', 'text', (col) => col.notNull().defaultTo(''))
-    .addColumn('board_revision', 'text', (col) => col.notNull().defaultTo('1.0'))
+    .addColumn('board_revision', 'text', (col) =>
+      col.notNull().defaultTo('1.0'),
+    )
     .execute();
 }
 
