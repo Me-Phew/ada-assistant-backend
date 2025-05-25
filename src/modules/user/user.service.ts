@@ -208,4 +208,17 @@ export class UserService {
 
     return this.userRepositoy.updateUser(userId, updateData);
   }
+
+  async updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+    const user = await this.userRepositoy.getUserById(userId);
+    
+    if (!user) {
+      return false;
+    }
+    
+    await this.userRepositoy.updateUser(userId, { passwordHash });
+    this.logger.log(`Password updated for user ${userId}`);
+    
+    return true;
+  }
 }

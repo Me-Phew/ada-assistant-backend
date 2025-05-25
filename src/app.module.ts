@@ -20,7 +20,9 @@ import configuration, {
 } from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ConversationModule } from './modules/conversation/conversation.module';
 import { DeviceModule } from './modules/device/device.module';
+
 import { HealthModule } from './modules/health/health.module';
 import { MailModule } from './modules/mail/mail.module';
 import { SpotifyModule } from './modules/spotify/spotify.module';
@@ -84,6 +86,7 @@ import { SpotifyModule } from './modules/spotify/spotify.module';
     SpotifyModule,
     AdminModule,
     DeviceModule,
+    ConversationModule,
   ],
   providers: [
     Logger,
