@@ -1,13 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Device } from 'database/schema/device';
 import { CurrentUser, Public } from '../../common/decorators';
 import { User } from '../../database/schema/users';
@@ -61,5 +62,25 @@ export class DeviceController {
       message: 'Heartbeat received',
       deviceId: device.id,
     };
+  }
+
+  @Delete(':id/unpair')
+  @ApiOperation({
+    summary: 'Unpair a device from the current user',
+    description: 'Removes the pairing between user and device',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Device unpaired successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Device not found or not paired with current user',
+  })
+  async unpairDevice(
+    @Param('id') deviceId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.deviceService.unpairDevice(deviceId, user.id);
   }
 }

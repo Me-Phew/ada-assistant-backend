@@ -194,4 +194,24 @@ export class DeviceRepository {
       .selectAll()
       .executeTakeFirst();
   }
+
+  async unpairDevice(deviceId: string, userId: string): Promise<boolean> {
+    const updateData = withTimestamps(
+      {
+        userId: null,
+        pairingToken: null,
+        pairedAt: null,
+      },
+      { createdAt: false },
+    );
+
+    const result = await this.db
+      .updateTable('devices')
+      .set(updateData)
+      .where('id', '=', deviceId)
+      .where('userId', '=', userId)
+      .execute();
+
+    return result.length > 0;
+  }
 }
