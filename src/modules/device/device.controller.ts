@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Logger,
@@ -9,11 +10,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -266,6 +264,23 @@ export class DeviceController {
       message: 'Heartbeat received',
       deviceId: device.id,
     };
+  }
+
+  @Delete(':id/unpair')
+  @ApiOperation({
+    summary: 'Unpair a device from the current user',
+    description: 'Removes the pairing between user and device',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Device unpaired successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Device not found or not paired with current user',
+  })
+  async unpairDevice(@Param('id') deviceId: string, @CurrentUser() user: User) {
+    return this.deviceService.unpairDevice(deviceId, user.id);
   }
 
   @UseGuards(DeviceGuard)

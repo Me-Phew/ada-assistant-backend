@@ -221,4 +221,40 @@ export class UserService {
     
     return true;
   }
+
+  async changeEmail(userId: string, currentPassword: string, newEmail: string): Promise<boolean> {
+    const user = await this.userRepositoy.getUserById(userId);
+    if (!user) {
+      this.logger.warn(`User not found for ID: ${userId}`);
+      return false;
+    }
+
+    const existingUserWithEmail = await this.userRepositoy.getUserByEmail(newEmail);
+    if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+      this.logger.warn(`Email ${newEmail} is already in use by another account`);
+      throw new EmailAlreadyTakenException(newEmail);
+    }
+
+    const passwordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!passwordValid) {
+      this.logger.warn(`Invalid password provided for user ID: ${userId}`);
+      return false;
+    }
+
+    const updatedUser = await this.userRepositoy.updateUser(userId, { 
+      email: newEmail.toLowerCase(), 
+      verified: false 
+    });
+    
+    if (!updatedUser) {
+      return false;
+    }
+
+    const token = await this.emailVerificationRepository.createVerificationToken(userId);
+    
+    await this.mailService.sendVerificationEmail(newEmail, token);
+    this.logger.log(`Verification email sent to new address: ${newEmail}`);
+
+    return true;
+  }
 }

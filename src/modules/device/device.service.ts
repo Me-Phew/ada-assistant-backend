@@ -84,4 +84,36 @@ export class DeviceService {
 
     return device;
   }
+
+  async unpairDevice(
+    deviceId: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`Attempting to unpair device ${deviceId} for user ${userId}`);
+
+    const device = await this.deviceRepository.getUserDeviceById(deviceId, userId);
+
+    if (!device) {
+      this.logger.warn(
+        `Device ${deviceId} not found or not assigned to user ${userId}`,
+      );
+      throw new NotFoundException('Device not found or not assigned to you');
+    }
+
+    const result = await this.deviceRepository.unpairDevice(deviceId, userId);
+
+    if (result) {
+      this.logger.log(`Device ${deviceId} successfully unpaired from user ${userId}`);
+      return {
+        success: true,
+        message: 'Device unpaired successfully',
+      };
+    } else {
+      this.logger.warn(`Failed to unpair device ${deviceId}`);
+      return {
+        success: false,
+        message: 'Failed to unpair device',
+      };
+    }
+  }
 }
