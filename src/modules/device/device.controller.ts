@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -31,6 +33,7 @@ import { HttpException, HttpStatus, UploadedFile } from '@nestjs/common';
 import { Express } from 'express';
 import { existsSync, mkdirSync } from 'fs';
 // import { memoryStorage } from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 import ffmpeg from 'fluent-ffmpeg';
 import { diskStorage } from 'multer';
 import { join } from 'path';
