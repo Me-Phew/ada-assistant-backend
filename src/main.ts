@@ -1,19 +1,21 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws'; // Import WsAdapter
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
+import { join } from 'path';
 import rawBodyMiddleware from 'utils/rawBody.middleware';
 import { AppModule } from './app.module';
 import { ValidationException } from './common/exceptions/validation.exception';
 import { BaseExceptionsFilter } from './common/filters/base-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     snapshot: true,
   });
@@ -47,6 +49,10 @@ async function bootstrap() {
     },
   };
 
+  console.log('Static assets path:', join(__dirname, '../..', 'public'));
+  app.useStaticAssets(join(__dirname, '../..', 'public'), {
+    prefix: '/static/',
+  });
   app.useWebSocketAdapter(new WsAdapter(app));
 
   app.useLogger(app.get(Logger));
