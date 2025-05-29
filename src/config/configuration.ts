@@ -1,6 +1,7 @@
 // Define the app config here
 
 import { cleanEnv, num, port, str, url } from 'envalid';
+import { join } from 'path';
 
 // You can inject it to anywhere via ConfigService
 export interface AppConfig {
@@ -11,10 +12,17 @@ export interface AppConfig {
   isDevEnv: boolean;
   corsMaxAge: number;
   corsAllowedOrigins: string[];
+  recordingsDir: string;
+  responsesDir: string;
+  musicDir: string;
+  recordingsPath: string;
+  responsesPath: string;
+  musicPath: string;
   spotify: SpotifyConfig;
   mail: MailConfig;
   appUrl: string;
   frontendUrl: string;
+  aiBackendUrl: string;
 }
 
 export interface DatabaseConfig {
@@ -62,6 +70,9 @@ export default (): AppConfig => {
       default:
         'http://localhost:3000,http://localhost:8080,http://127.0.0.1:44809',
     }),
+    RECORDINGS_DIR: str({ default: 'recordings' }),
+    RESPONSES_DIR: str({ default: 'responses' }),
+    MUSIC_DIR: str({ default: 'music' }),
     SPOTIFY_CLIENT_ID: str(),
     SPOTIFY_CLIENT_SECRET: str(),
     SPOTIFY_REDIRECT_URI: str({
@@ -74,6 +85,9 @@ export default (): AppConfig => {
     MAIL_FROM: str({ default: 'noreply@adavoice.com' }),
     APP_URL: str({ default: 'http://localhost:3001' }),
     FRONTEND_URL: str({ default: 'http://localhost:3000' }),
+    AI_BACKEND_URL: str({
+      default: 'http://localhost:9000/',
+    }),
   });
 
   const config: AppConfig = {
@@ -90,6 +104,12 @@ export default (): AppConfig => {
     isDevEnv: env.isDev,
     corsMaxAge: env.CORS_MAX_AGE,
     corsAllowedOrigins: env.CORS_ALLOWED_ORIGINS.split(','),
+    recordingsDir: env.RECORDINGS_DIR,
+    responsesDir: env.RESPONSES_DIR,
+    musicDir: env.MUSIC_DIR,
+    recordingsPath: join(__dirname, '../../..', env.RECORDINGS_DIR),
+    responsesPath: join(__dirname, '../../..', env.RESPONSES_DIR),
+    musicPath: join(__dirname, '../../..', env.MUSIC_DIR),
     spotify: {
       clientId: env.SPOTIFY_CLIENT_ID,
       clientSecret: env.SPOTIFY_CLIENT_SECRET,
@@ -104,6 +124,7 @@ export default (): AppConfig => {
     },
     appUrl: env.APP_URL,
     frontendUrl: env.FRONTEND_URL,
+    aiBackendUrl: env.AI_BACKEND_URL,
   };
 
   return config;

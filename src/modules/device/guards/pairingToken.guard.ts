@@ -41,7 +41,7 @@ export class DeviceGuard implements CanActivate {
   }
 
   async validateRequest(req: Request) {
-    const authHeader = req.header('authorization');
+    const authHeader = req.header('Authorization');
 
     this.logger.log('Auth Header:', authHeader);
 

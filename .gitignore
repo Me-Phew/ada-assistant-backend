@@ -1,5 +1,9 @@
 public
+recordings
+responses
+music
 uploads
+tmp
 # compiled output
 /dist
 /node_modules

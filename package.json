@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@apollo/server": "^4.12.0",
+    "@distube/ytdl-core": "^4.16.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@nanogiants/nestjs-swagger-api-exception-decorator": "^1.7.2",
@@ -53,6 +54,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@scalar/nestjs-api-reference": "^0.4.8",
     "@types/nodemailer": "^6.4.17",
+    "@types/yt-search": "^2.10.3",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
@@ -78,7 +80,10 @@
     "superagent": "^10.2.1",
     "uuid": "^9.0.1",
     "wavefile": "^11.0.0",
-    "ws": "^8.18.2"
+    "ws": "^8.18.2",
+    "yt-search": "^2.13.1",
+    "ytdl-core": "npm:@distube/ytdl-core@^4.16.10",
+    "ytmusic-api": "^5.3.0"
   },
   "devDependencies": {
     "@compodoc/compodoc": "^1.1.26",

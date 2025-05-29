@@ -6,9 +6,9 @@ import { WsAdapter } from '@nestjs/platform-ws'; // Import WsAdapter
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
+import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
-import { join } from 'path';
 import rawBodyMiddleware from 'utils/rawBody.middleware';
 import { AppModule } from './app.module';
 import { ValidationException } from './common/exceptions/validation.exception';
@@ -49,10 +49,35 @@ async function bootstrap() {
     },
   };
 
-  console.log('Static assets path:', join(__dirname, '../..', 'public'));
-  app.useStaticAssets(join(__dirname, '../..', 'public'), {
-    prefix: '/static/',
+  const recordingsPath = configService.get<string>('recordingsPath');
+  if (!existsSync(recordingsPath)) {
+    mkdirSync(recordingsPath, { recursive: true });
+  }
+  app.useStaticAssets(recordingsPath, {
+    prefix: `/${configService.get<string>('recordingsDir')}/`,
   });
+  console.log(`Recordings directory initialized at: ${recordingsPath}`);
+
+  const responsesPath = configService.get<string>('responsesPath');
+  if (!existsSync(responsesPath)) {
+    mkdirSync(responsesPath, { recursive: true });
+  }
+  app.useStaticAssets(responsesPath, {
+    prefix: `/${configService.get<string>('responsesDir')}/`,
+  });
+  console.log(`Responses directory initialized at: ${responsesPath}`);
+
+  const musicPath = configService.get<string>('musicPath');
+  if (!existsSync(musicPath)) {
+    mkdirSync(musicPath, { recursive: true });
+  }
+  app.useStaticAssets(musicPath, {
+    prefix: `/${configService.get<string>('musicDir')}/`,
+    maxAge: 0,
+    immutable: false,
+  });
+  console.log(`Music directory initialized at: ${musicPath}`);
+
   app.useWebSocketAdapter(new WsAdapter(app));
 
   app.useLogger(app.get(Logger));

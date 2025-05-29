@@ -4,12 +4,19 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpException,
+  HttpStatus,
   Logger,
+  NotFoundException,
   Param,
   Post,
+  Res,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -19,39 +26,34 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Device } from 'database/schema/device';
-import * as fs from 'fs'; // For reading file if using diskStorage
+import type { Response } from 'express';
+import { Express } from 'express';
+import ffmpeg from 'fluent-ffmpeg';
+import * as fs from 'fs';
+import { existsSync, mkdirSync } from 'fs';
+import { diskStorage } from 'multer';
+import { basename, extname, join } from 'path';
 import * as superagent from 'superagent';
+import { v4 as uuidv4 } from 'uuid';
+import yts from 'yt-search';
 import { CurrentUser, Public } from '../../common/decorators';
 import { User } from '../../database/schema/users';
 import { CurrentDevice } from './decorators/current-device.decorator';
 import { DeviceService } from './device.service';
+import { AdaResponseDto } from './dtos/ada-response.dto';
 import { PairDto } from './dtos/inputs/pair.dto';
 import { DeviceGuard } from './guards/pairingToken.guard';
 
-import { HttpException, HttpStatus, UploadedFile } from '@nestjs/common';
+const tmpAudioDir = join(process.cwd(), 'tmp', 'audio');
 
-import { Express } from 'express';
-import { existsSync, mkdirSync } from 'fs';
-// import { memoryStorage } from 'multer';
-import { FileInterceptor } from '@nestjs/platform-express';
-import ffmpeg from 'fluent-ffmpeg';
-import { diskStorage } from 'multer';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
-// const audioStorage = memoryStorage();
-
-// Configure multer for audio file storage
 const audioStorage = diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = join(process.cwd(), 'uploads', 'audio');
-    if (!existsSync(uploadPath)) {
-      mkdirSync(uploadPath, { recursive: true });
+    if (!existsSync(tmpAudioDir)) {
+      mkdirSync(tmpAudioDir, { recursive: true });
     }
-    cb(null, uploadPath);
+    cb(null, tmpAudioDir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename with timestamp and device info
     const deviceId = req.device.id || 'unknown';
     const timestamp = Date.now();
     cb(null, `${deviceId}_${timestamp}${'.pcm'}`);
@@ -85,164 +87,40 @@ const audioFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
   }
 };
 
+// Test comment
+
 @ApiTags('User Devices')
 @ApiBearerAuth()
 @Controller('devices')
 export class DeviceController {
   private readonly logger = new Logger(DeviceController.name);
+  // private readonly ytmusic = new YTMusic();
 
-  private audioDir = join(__dirname, '../../../..', 'public', 'audio');
+  private recordingsDir: string;
+  private responsesDir: string;
+  private musicDir: string;
 
-  constructor(private readonly deviceService: DeviceService) {
-    if (!existsSync(this.audioDir)) {
-      mkdirSync(this.audioDir, { recursive: true });
-    }
+  private recordingsPath: string;
+  private responsesPath: string;
+  private musicPath: string;
 
-    console.log(`Audio directory initialized at: ${this.audioDir}`);
-  }
+  private aiBackendUrl: string;
 
-  // Helper method to parse SSE responses (if needed for streaming)
-  private parseSSEResponse(
-    responseText: string,
-  ): Array<{ event?: string; data: string }> {
-    const events: Array<{ event?: string; data: string }> = [];
-    const lines = responseText.split('\n');
-
-    let currentEvent: { event?: string; data: string } = { data: '' };
-
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        currentEvent.event = line.substring(7).trim();
-      } else if (line.startsWith('data: ')) {
-        currentEvent.data = line.substring(6).trim();
-        events.push({ ...currentEvent });
-        currentEvent = { data: '' };
-      } else if (line.trim() === '') {
-        // Empty line indicates end of event
-        if (currentEvent.data) {
-          events.push({ ...currentEvent });
-          currentEvent = { data: '' };
-        }
-      }
-    }
-
-    return events;
-  }
-  // Helper method to handle SSE transcription with proper streaming
-  private async handleSSETranscription(
-    wavBuffer: Buffer,
-    fileName: string,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let accumulatedData = '';
-      let finalTranscription = '';
-
-      const request = superagent
-        .post('http://192.168.1.13:9000/stt/transcribe')
-        .set('Accept', 'text/event-stream')
-        .attach('file', wavBuffer, fileName)
-        .buffer(false)
-        .timeout(30000);
-
-      request.on('response', (res) => {
-        this.logger.log('SSE connection established');
-
-        res.on('data', (chunk) => {
-          const chunkStr = chunk.toString();
-          this.logger.log(
-            `Received SSE chunk (${chunk.length} bytes):`,
-            JSON.stringify(chunkStr),
-          );
-          accumulatedData += chunkStr;
-
-          // Parse each line as it comes in
-          const lines = chunkStr.split('\n');
-          for (const line of lines) {
-            console.log('Processing line:', JSON.stringify(line));
-
-            if (line.startsWith('data: ')) {
-              const jsonData = line.substring(6).trim();
-              // try {
-              const parsedData = JSON.parse(jsonData);
-
-              if (
-                parsedData.type === 'done' ||
-                parsedData.message === 'Transcription complete.'
-              ) {
-                finalTranscription =
-                  parsedData.full_text || parsedData.text || '';
-                this.logger.log(
-                  'Transcription completed:',
-                  JSON.stringify(finalTranscription),
-                );
-                // Don't resolve here - wait for stream to end
-              } else if (parsedData.full_text || parsedData.text) {
-                // Update with partial transcription
-                finalTranscription = parsedData.full_text || parsedData.text;
-                this.logger.log(
-                  'Partial transcription:',
-                  JSON.stringify(finalTranscription),
-                );
-              }
-              // } catch (parseError) {
-              //   this.logger.warn(
-              //     'Failed to parse JSON line:',
-              //     JSON.stringify(line),
-              //     'Error:',
-              //     parseError,
-              //   );
-              // }
-            }
-          }
-        });
-
-        res.on('end', () => {
-          this.logger.log(
-            'SSE stream ended. Final transcription:',
-            JSON.stringify(finalTranscription),
-          );
-          this.logger.log(
-            'Total accumulated data:',
-            JSON.stringify(accumulatedData),
-          );
-          if (finalTranscription) {
-            resolve(finalTranscription);
-          } else {
-            reject(new Error('No transcription received from SSE stream'));
-          }
-        });
-
-        res.on('error', (error) => {
-          this.logger.error('SSE stream error:', error);
-          reject(error);
-        });
-      });
-
-      request.on('error', (error) => {
-        this.logger.error('Request error:', error);
-        reject(error);
-      });
-
-      // Start the request
-      request.end();
-    });
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Get all devices assigned to the current user' })
-  async getUserDevices(@CurrentUser() user: User) {
-    return this.deviceService.getUserDevices(user.id);
-  }
-
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Get a specific device assigned to the current user',
-  })
-  async getUserDevice(
-    @Param('id') deviceId: string,
-    @CurrentUser() user: User,
+  constructor(
+    private readonly deviceService: DeviceService,
+    private configService: ConfigService,
   ) {
-    return this.deviceService.getUserDevice(deviceId, user.id);
+    // this.ytmusic.initialize(/* Optional: Custom cookies */);
+
+    this.recordingsDir = this.configService.get<string>('recordingsDir');
+    this.responsesDir = this.configService.get<string>('responsesDir');
+    this.musicDir = this.configService.get<string>('musicDir');
+
+    this.recordingsPath = this.configService.get<string>('recordingsPath');
+    this.responsesPath = this.configService.get<string>('responsesPath');
+    this.musicPath = this.configService.get<string>('musicPath');
+
+    this.aiBackendUrl = this.configService.get<string>('aiBackendUrl');
   }
 
   @Post('/pair')
@@ -267,6 +145,87 @@ export class DeviceController {
       message: 'Heartbeat received',
       deviceId: device.id,
     };
+  }
+
+  // @UseGuards(DeviceGuard)
+  // @Public()
+  // @Post('download-youtube-audio')
+  // async downloadYoutubeAudio() {
+  //   // Don't await here if you want to send an immediate response
+  //   // and let the download happen in the background.
+  //   // For this example, we'll await and then send the response.
+  //   const result = await this.downloadAudioProgressive();
+
+  //   // Option 1: Send back the path (client then needs another way to get the file)
+  //   return {
+  //     message: 'Audio download and conversion successful.',
+  //     filePath: result.filePath,
+  //   };
+  // }
+
+  @Public()
+  @Get('/antyradio')
+  async anyradio(@Res() res: Response) {
+    const radioUrl = 'https://an05.cdn.eurozet.pl/ant-web.mp3';
+
+    try {
+      const stream = superagent.get(radioUrl).buffer(false);
+
+      res.setHeader('Content-Type', 'audio/mpeg');
+
+      stream.pipe(res);
+    } catch (error) {
+      console.error('Streaming error:', error);
+    }
+  }
+
+  @Public()
+  @Get('/filestream/:filename')
+  async streamfile(@Param('filename') filename: string, @Res() res: Response) {
+    const safeFilename = basename(filename); // prevent path traversal
+    const ext = extname(safeFilename);
+
+    if (ext !== '.mp3') {
+      throw new NotFoundException('Only MP3 files are supported');
+    }
+
+    const filePath = join(this.musicDir, safeFilename);
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('File not found');
+    }
+
+    try {
+      res.setHeader('Content-Type', 'audio/mpeg');
+
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+      fileStream.on('error', (err) => {
+        console.error('File stream error:', err);
+        res.status(500).send('Error streaming file');
+      });
+    } catch (error) {
+      console.error('Streaming error:', error);
+      res.status(500).send('Unable to stream audio');
+    }
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all devices assigned to the current user' })
+  async getUserDevices(@CurrentUser() user: User) {
+    return this.deviceService.getUserDevices(user.id);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get a specific device assigned to the current user',
+  })
+  async getUserDevice(
+    @Param('id') deviceId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.deviceService.getUserDevice(deviceId, user.id);
   }
 
   @Delete(':id/unpair')
@@ -319,6 +278,14 @@ export class DeviceController {
         filename: { type: 'string' },
         size: { type: 'number' },
         deviceId: { type: 'string' },
+        transcription: { type: 'string' },
+        responseText: { type: 'string' },
+        responsePath: { type: 'string' },
+        isCommand: { type: 'boolean' },
+        isPlaybackStartRequest: { type: 'boolean' },
+        playbackAudioPath: {
+          type: 'string',
+        },
       },
     },
   })
@@ -344,161 +311,223 @@ export class DeviceController {
   async useAda(
     @CurrentDevice() device: Device,
     @UploadedFile() audioFile: Express.Multer.File,
-  ) {
-    // try {
-    // Validate that audio file was uploaded
-    if (!audioFile) {
+  ): Promise<AdaResponseDto | undefined> {
+    try {
+      if (!audioFile) {
+        throw new HttpException(
+          'No audio file provided. Please upload an audio file.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      this.logger.log(
+        `Audio uploaded from device ${device.id}: ${audioFile.filename}`,
+      );
+
+      const wavFilePath = `${this.recordingsPath}/${device.id}_${Date.now()}.wav`;
+
+      await new Promise((resolve, reject) => {
+        ffmpeg(audioFile.path)
+          .inputOptions(['-f s16le', '-ar 16000', '-ac 1'])
+          .inputFormat('s16le')
+          .audioChannels(1)
+          .audioCodec('pcm_s16le')
+          .audioFrequency(16000)
+          .format('wav')
+          .on('end', () => {
+            this.logger.log(`Converted PCM to WAV using ffmpeg ${wavFilePath}`);
+            // TODO: Maybe delete the original audio file if not needed
+            resolve(null);
+          })
+          .on('error', (err) => {
+            this.logger.error(`FFmpeg conversion error: ${err.message}`);
+            reject(err);
+          })
+          .save(wavFilePath);
+      });
+
+      let finalTranscription = '';
+
+      const wavBuffer = fs.readFileSync(wavFilePath);
+
+      try {
+        const transcriptionResult =
+          await this.deviceService.handleSSETranscription(
+            wavBuffer,
+            audioFile.filename,
+          );
+
+        finalTranscription = transcriptionResult;
+      } catch (error) {
+        this.logger.error('Error calling STT API:', error);
+      }
+
+      this.logger.log(`Transcription result: ${finalTranscription}`);
+
+      const llmResponse = await superagent
+        .post(`${this.aiBackendUrl}llm/generate`)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send({ prompt: finalTranscription })
+        .timeout(30000);
+
+      this.logger.log(
+        `LLM response for device ${device.id}: ${JSON.stringify(llmResponse.body, null, 4)}`,
+      );
+
+      let textToSay = llmResponse.body.response;
+
+      if (llmResponse.body.is_command) {
+        textToSay = `Odtwarzam przez wbudowany głośnik`;
+      }
+
+      let isPlaybackStartRequest = false;
+      let playbackAudioFileName: string | undefined;
+
+      if (llmResponse.body.is_command) {
+        this.logger.log(`Device ${device.id} requested command.`);
+
+        switch (llmResponse.body.command_type) {
+          case 'music':
+            this.logger.log(`Device ${device.id} requested music playback.`);
+
+            isPlaybackStartRequest = true;
+
+            const playbackDataParams = llmResponse.body.command_data.params;
+
+            this.logger.log(
+              `Playback data params: ${JSON.stringify(playbackDataParams)}`,
+            );
+
+            switch (playbackDataParams.targetPlatform) {
+              case 'none': {
+                switch (playbackDataParams.action) {
+                  case 'play': {
+                    this.logger.log(
+                      `Device ${device.id} requested to play music.`,
+                    );
+
+                    const query = playbackDataParams.query;
+
+                    textToSay = `Odtwarzam ${query}`;
+
+                    const videos = await yts({
+                      pages: 1,
+                      query,
+                      category: 'music',
+                    });
+
+                    const firstVideoResult = videos.videos[0];
+                    console.log(firstVideoResult);
+
+                    playbackAudioFileName = `${firstVideoResult.videoId}_${Date.now()}.mp3`;
+
+                    const outputPath = join(
+                      this.musicPath,
+                      playbackAudioFileName,
+                    );
+
+                    this.logger.log(`Output MP3 path: ${outputPath}`);
+
+                    this.deviceService.downloadAudioProgressive(
+                      firstVideoResult.url,
+                      // 'KLuTLF3x9sA',
+                      outputPath,
+                    );
+
+                    break;
+                  }
+                  case 'pause': {
+                    this.logger.log(
+                      `Device ${device.id} requested to pause music.`,
+                    );
+                    textToSay = `Wstrzymuję muzykę.`;
+                    break;
+                  }
+                  case 'stop': {
+                    this.logger.log(
+                      `Device ${device.id} requested to stop music.`,
+                    );
+                    textToSay = `Zatrzymuję muzykę.`;
+                    break;
+                  }
+                }
+                break;
+              }
+              default: {
+                this.logger.warn(
+                  `Device ${device.id} requested unsupported playback platform: ${playbackDataParams.targetPlatfrom}`,
+                );
+                textToSay = `Nie obsługuję tej platformy.`;
+                break;
+              }
+            }
+        }
+      }
+
+      const ttsResponse = await superagent
+        .post(`${this.aiBackendUrl}tts/synthesize`)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send({ text: textToSay })
+        .timeout(60000);
+
+      const responseFileUUID = uuidv4();
+
+      const wavResponseFileName = `${responseFileUUID}.wav`;
+      const wavResponsefilePath = join(tmpAudioDir, wavResponseFileName);
+      fs.writeFileSync(wavResponsefilePath, ttsResponse.body);
+
+      const mp3ResponseFileName = `${responseFileUUID}.mp3`;
+      const mp3ResponsefilePath = join(this.responsesPath, mp3ResponseFileName);
+
+      await new Promise((resolve, reject) => {
+        ffmpeg(wavResponsefilePath)
+          .inputFormat('wav')
+          .audioChannels(1)
+          .audioFrequency(44100)
+          .audioCodec('libmp3lame')
+          .audioBitrate('48k')
+          .format('mp3')
+          .on('end', () => {
+            this.logger.log(`Converted WAV to MP3 using ffmpeg`);
+            resolve(null);
+          })
+          .on('error', (err) => {
+            this.logger.error(`FFmpeg conversion error: ${err.message}`);
+            reject(err);
+          })
+          .save(mp3ResponsefilePath);
+      });
+
+      const response: AdaResponseDto = {
+        success: true,
+        transcription: finalTranscription,
+        responseText: textToSay,
+        responsePath: `${this.responsesDir}/${mp3ResponseFileName}`,
+        isCommand: llmResponse.body.is_command || false,
+        isPlaybackStartRequest,
+      };
+
+      if (isPlaybackStartRequest) {
+        response.playbackAudioPath = `${this.musicDir}/${playbackAudioFileName}`;
+      }
+
+      return response;
+    } catch (error) {
+      this.logger.error(
+        `Error processing audio upload from device ${device.id}:`,
+        error,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       throw new HttpException(
-        'No audio file provided. Please upload an audio file.',
-        HttpStatus.BAD_REQUEST,
+        'Internal server error while processing audio upload',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
-    this.logger.log(
-      `Audio uploaded from device ${device.id}: ${audioFile.filename}`,
-    );
-
-    // let pcmBuffer: Buffer;
-    // if (audioFile.buffer) {
-    //   // If memoryStorage is used
-    //   pcmBuffer = audioFile.buffer;
-    // } else if (audioFile.path) {
-    //   // If diskStorage is used
-    //   pcmBuffer = fs.readFileSync(audioFile.path);
-    // } else {
-    //   throw new HttpException(
-    //     'Audio file data is missing.',
-    //     HttpStatus.BAD_REQUEST,
-    //   );
-    // }
-
-    // const wav = new WaveFile();
-    // wav.from(1, 16000, '16', pcmBuffer);
-    // const wavUint8Array = wav.toBuffer();
-    // const wavBuffer = Buffer.from(wavUint8Array);
-
-    //  save wavBuffer to disk if needed
-    const wavFilePath = join(
-      process.cwd(),
-      'uploads',
-      'audio',
-      `${device.id}_${Date.now()}.wav`,
-    );
-    // fs.writeFileSync(wavFilePath, wavBuffer);
-
-    // this.logger.log(
-    //   `Converted PCM to WAV. WAV size: ${wavBuffer.length} bytes`,
-    // );
-
-    await new Promise((resolve, reject) => {
-      ffmpeg(audioFile.path)
-        .inputOptions(['-f s16le', '-ar 16000', '-ac 1'])
-        .inputFormat('s16le') // 16-bit little-endian PCM
-        .audioChannels(1) // mono
-        .audioCodec('pcm_s16le') // PCM 16-bit little-endian
-        .audioFrequency(16000) // 16kHz sample rate
-        .format('wav')
-        .on('end', () => {
-          this.logger.log(`Converted PCM to WAV using ffmpeg`);
-          resolve(null);
-        })
-        .on('error', (err) => {
-          this.logger.error(`FFmpeg conversion error: ${err.message}`);
-          reject(err);
-        })
-        .save(wavFilePath);
-    });
-
-    let finalTranscription = '';
-
-    const wavBuffer = fs.readFileSync(wavFilePath);
-
-    // try {
-    // Alternative approach: Use a more robust streaming handler
-    const transcriptionResult = await this.handleSSETranscription(
-      wavBuffer,
-      audioFile.filename,
-    );
-
-    finalTranscription = transcriptionResult;
-    // } catch (error) {
-    //   this.logger.error('Error calling STT API:', error);
-    // }
-
-    const llmResponse = await superagent
-      .post('http://192.168.1.13:9000/llm/generate')
-      .set('Content-Type', 'application/json')
-      .set('Accept', 'application/json')
-      .send({ prompt: transcriptionResult })
-      .timeout(30000);
-
-    console.log('RESPONSE:', llmResponse.body);
-
-    let textToSay = llmResponse.body.response;
-
-    if (llmResponse.body.is_command) {
-      textToSay = `Odtwarzam przez wbudowany głośnik`;
-    }
-
-    const ttsResponse = await superagent
-      .post('http://192.168.1.13:9000/tts/synthesize')
-      .set('Content-Type', 'application/json')
-      .set('Accept', 'application/json')
-      .send({ text: textToSay })
-      .timeout(60000);
-
-    console.log('Response:', ttsResponse.body);
-
-    const responseFileUUID = uuidv4();
-
-    const wavResponseFileName = `${responseFileUUID}.wav`;
-    const wavResponsefilePath = join(this.audioDir, wavResponseFileName);
-    fs.writeFileSync(wavResponsefilePath, ttsResponse.body);
-
-    const mp3ResponseFileName = `${responseFileUUID}.mp3`;
-    const mp3ResponsefilePath = join(this.audioDir, mp3ResponseFileName);
-
-    await new Promise((resolve, reject) => {
-      ffmpeg(wavResponsefilePath)
-        .inputFormat('wav')
-        .audioChannels(1)
-        .audioFrequency(44100)
-        .audioCodec('libmp3lame')
-        .audioBitrate('48k')
-        .format('mp3')
-        .on('end', () => {
-          this.logger.log(`Converted WAV to MP3 using ffmpeg`);
-          resolve(null);
-        })
-        .on('error', (err) => {
-          this.logger.error(`FFmpeg conversion error: ${err.message}`);
-          reject(err);
-        })
-        .save(mp3ResponsefilePath);
-    });
-
-    return {
-      success: true,
-      isCommand: llmResponse.body.isCommand || false,
-      isPlaybackStartRequest: false,
-      message: 'Audio uploaded successfully and transcribed',
-      transcription: finalTranscription,
-      responsePath: `static/audio/${mp3ResponseFileName}`,
-    };
-    // } catch (error) {
-    //   this.logger.error(
-    //     `Error processing audio upload from device ${device.id}:`,
-    //     error,
-    //   );
-
-    //   if (error instanceof HttpException) {
-    //     throw error;
-    //   }
-
-    //   throw new HttpException(
-    //     'Internal server error while processing audio upload',
-    //     HttpStatus.INTERNAL_SERVER_ERROR,
-    //   );
-    // }
   }
 }
