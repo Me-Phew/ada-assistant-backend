@@ -1,0 +1,1 @@
+export { UserRole } from '../../database/schema/common/role.enum';

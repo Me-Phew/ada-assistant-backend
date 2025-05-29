@@ -1,15 +1,21 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { AppConfig } from '../../config/configuration';
+import { MailModule } from '../mail/mail.module';
+import { SharedModule } from '../shared/shared.module';
+import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { UserModule } from '../user/user.module';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppConfig } from '../../config/configuration';
+import { EmailVerificationRepository } from './repository/email-verification.repository';
+import { PasswordResetRepository } from './repository/password-reset.repository';
 import { AuthResolver } from './resolvers/auth.resolver';
 
 @Module({
   imports: [
     UserModule,
+    MailModule,
+    SharedModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -17,9 +23,14 @@ import { AuthResolver } from './resolvers/auth.resolver';
         secret: configService.get<string>('secret'),
       }),
     }),
-  ], // import user module
+  ],
   controllers: [AuthController],
-  providers: [AuthService, AuthResolver],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    AuthResolver,
+    EmailVerificationRepository,
+    PasswordResetRepository,
+  ],
+  exports: [AuthService, EmailVerificationRepository, PasswordResetRepository],
 })
 export class AuthModule {}

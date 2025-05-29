@@ -1,5 +1,6 @@
-import { CreatedAt, UpdatedAt } from './common/datetime';
 import { Generated, Insertable, Selectable, Updateable } from 'kysely';
+import { CreatedAt, UpdatedAt } from './common/datetime';
+import { UserRole } from './common/role.enum';
 
 export interface UserTable {
   id: Generated<string>;
@@ -7,6 +8,7 @@ export interface UserTable {
   email: string;
   passwordHash: string;
   verified: boolean;
+  role: UserRole;
   createdAt: CreatedAt;
   updatedAt: UpdatedAt;
 }

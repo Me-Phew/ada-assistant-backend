@@ -1,9 +1,12 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { WsAdapter } from '@nestjs/platform-ws'; // Import WsAdapter
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AllExceptionsFilter } from 'common/filters/all-exception.filter';
+import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import rawBodyMiddleware from 'utils/rawBody.middleware';
@@ -12,7 +15,7 @@ import { ValidationException } from './common/exceptions/validation.exception';
 import { BaseExceptionsFilter } from './common/filters/base-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     snapshot: true,
   });
@@ -46,6 +49,37 @@ async function bootstrap() {
     },
   };
 
+  const recordingsPath = configService.get<string>('recordingsPath');
+  if (!existsSync(recordingsPath)) {
+    mkdirSync(recordingsPath, { recursive: true });
+  }
+  app.useStaticAssets(recordingsPath, {
+    prefix: `/${configService.get<string>('recordingsDir')}/`,
+  });
+  console.log(`Recordings directory initialized at: ${recordingsPath}`);
+
+  const responsesPath = configService.get<string>('responsesPath');
+  if (!existsSync(responsesPath)) {
+    mkdirSync(responsesPath, { recursive: true });
+  }
+  app.useStaticAssets(responsesPath, {
+    prefix: `/${configService.get<string>('responsesDir')}/`,
+  });
+  console.log(`Responses directory initialized at: ${responsesPath}`);
+
+  const musicPath = configService.get<string>('musicPath');
+  if (!existsSync(musicPath)) {
+    mkdirSync(musicPath, { recursive: true });
+  }
+  app.useStaticAssets(musicPath, {
+    prefix: `/${configService.get<string>('musicDir')}/`,
+    maxAge: 0,
+    immutable: false,
+  });
+  console.log(`Music directory initialized at: ${musicPath}`);
+
+  app.useWebSocketAdapter(new WsAdapter(app));
+
   app.useLogger(app.get(Logger));
   app.use(
     helmet({
@@ -55,31 +89,32 @@ async function bootstrap() {
   );
 
   // FOR TESTING ONLY!!!
+  app.enableCors({
+    origin: (origin, callback) => {
+      console.log('Origin attempting to connect:', origin);
+
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (corsAllowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('Blocked origin:', origin);
+        console.log('Allowed origins:', corsAllowedOrigins);
+        callback(null, false);
+      }
+    },
+    maxAge: corsMaxAge,
+    credentials: true,
+  });
+
   // app.enableCors({
-  //   origin: (origin, callback) => {
-  //     console.log('Origin attempting to connect:', origin);
-      
-  //     if (!origin) {
-  //       callback(null, true);
-  //       return;
-  //     }
-      
-  //     if (corsAllowedOrigins.includes(origin)) {
-  //       callback(null, true);
-  //     } else {
-  //       console.log('Blocked origin:', origin);
-  //       console.log('Allowed origins:', corsAllowedOrigins);
-  //       callback(null, false);
-  //     }
-  //   },
+  //   origin: corsAllowedOrigins,
   //   maxAge: corsMaxAge,
-  //   credentials: true
   // });
 
-  app.enableCors({
-    origin: corsAllowedOrigins,
-    maxAge: corsMaxAge,
-  });
   app.enableVersioning({
     type: VersioningType.URI,
   });

@@ -1,4 +1,10 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { UserRole } from 'database/schema/common/role.enum';
+
+registerEnumType(UserRole, {
+  name: 'UserRole',
+  description: 'Role of the user',
+});
 
 @ObjectType('User')
 export class UserObject {
@@ -30,6 +36,16 @@ export class UserObject {
    * @memberof UserDto
    */
   verified!: boolean;
+
+  /**
+   * User role
+   * 
+   * @example UserRole.USER
+   * @type {UserRole}
+   * @memberof UserObject
+   */
+  @Field(() => UserRole)
+  role!: UserRole;
 
   /**
    * User join date

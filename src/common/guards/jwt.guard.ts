@@ -2,15 +2,15 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { getRequest } from 'common/graphql/context';
+import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../modules/auth/auth.service';
-import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { Reflector } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
-import { getRequest } from 'common/graphql/context';
 
 @Injectable()
 export class JwtGuard implements CanActivate {
@@ -42,21 +42,26 @@ export class JwtGuard implements CanActivate {
   }
 
   async validateRequest(req: Request) {
+    let token: string | undefined;
     const authHeader = req.header('authorization');
-
-    if (!authHeader) {
-      throw new UnauthorizedException();
+    if (authHeader) {
+      const [method, tokenValue] = authHeader.split(' ');
+      if (method === 'Bearer' && tokenValue) {
+        token = tokenValue;
+      }
     }
 
-    const [method, token] = authHeader.split(' ');
+    if (!token && req.query && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
 
-    if (method !== 'Bearer') {
+    if (!token) {
       throw new UnauthorizedException();
     }
 
     const user = await this.authService.authenticateWithJwt(token);
     if (!user) {
-      return false;
+      throw new UnauthorizedException();
     }
     req.user = user;
     return true;

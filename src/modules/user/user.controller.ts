@@ -1,13 +1,15 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { UserService } from './user.service';
-import { RegisterUserDto as RegisterUserDto } from './dtos/register-user.dto';
-import { MessageDto } from '../../common/dtos/message.dto';
-import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../../common/decorators';
-import { ApiValidationException } from 'common/decorators/api-validation-exception.decorator';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiUnknownErrorException } from 'common/decorators/api-unknown-error-exception.decorator';
+import { ApiValidationException } from 'common/decorators/api-validation-exception.decorator';
+import { CurrentUser, Public } from '../../common/decorators';
 import { TemplatedApiException } from '../../common/decorators/templated-api-exception.decorator';
+import { MessageDto } from '../../common/dtos/message.dto';
+import { RegisterUserDto } from './dtos/register-user.dto';
+import { ChangeEmailDto } from './dtos/change-email.dto';
 import { EmailAlreadyTakenException } from './exceptions/email-already-taken.exception';
+import { UserService } from './user.service';
+import { User } from '../../database/schema/users';
 
 @Controller('users')
 @ApiTags('Users')
@@ -35,5 +37,56 @@ export class UserController {
     await this.userService.registerUser(registerUserDto);
 
     return { message: 'Account created' };
+  }
+
+  @Post('/change-email')
+  @ApiBearerAuth()
+  @ApiOperation({
+    description: 'Change user email address',
+    summary: 'Change email address',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email changed successfully and verification email sent',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid password or other validation error',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email already taken by another user',
+  })
+  async changeEmail(
+    @CurrentUser() user: User,
+    @Body() changeEmailDto: ChangeEmailDto,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const success = await this.userService.changeEmail(
+        user.id,
+        changeEmailDto.currentPassword,
+        changeEmailDto.newEmail,
+      );
+      
+      if (success) {
+        return {
+          success: true,
+          message: 'Email changed successfully. Please check your new email address for verification instructions.',
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Failed to change email. Please check your password and try again.',
+        };
+      }
+    } catch (error) {
+      if (error instanceof EmailAlreadyTakenException) {
+        throw error;
+      }
+      return {
+        success: false,
+        message: 'An error occurred while changing email',
+      };
+    }
   }
 }

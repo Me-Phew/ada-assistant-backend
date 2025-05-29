@@ -1,25 +1,31 @@
-import { HealthModule } from './modules/health/health.module';
-import { DatabaseModule } from './database/database.module';
-import { Module, Logger } from '@nestjs/common';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { GraphQLModule } from '@nestjs/graphql';
+import { formatGraphQLError } from 'common/graphql/errors';
+import { DataloaderModule } from 'dataloader/dataloader.module';
+import { DataloaderService } from 'dataloader/dataloader.service';
+import { AuthModule } from 'modules/auth/auth.module';
+import { UserModule } from 'modules/user/user.module';
 import { LoggerModule } from 'nestjs-pino';
+import { join } from 'path';
+import { JwtGuard } from './common/guards/jwt.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import configuration, {
+  AppConfig,
   LoggerConfig,
   LoggerFormat,
 } from './config/configuration';
-import { AppConfig } from './config/configuration';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtGuard } from './common/guards/jwt.guard';
-import { AuthModule } from 'modules/auth/auth.module';
-import { UserModule } from 'modules/user/user.module';
-import { GraphQLModule } from '@nestjs/graphql';
-import { DataloaderModule } from 'dataloader/dataloader.module';
-import { DataloaderService } from 'dataloader/dataloader.service';
-import { join } from 'path';
-import { formatGraphQLError } from 'common/graphql/errors';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { DatabaseModule } from './database/database.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { ConversationModule } from './modules/conversation/conversation.module';
+import { DeviceModule } from './modules/device/device.module';
 
+import { HealthModule } from './modules/health/health.module';
+import { MailModule } from './modules/mail/mail.module';
+import { SpotifyModule } from './modules/spotify/spotify.module';
 @Module({
   imports: [
     DevtoolsModule.register({
@@ -73,9 +79,14 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
     DatabaseModule,
 
     // Http modules
+    MailModule,
     AuthModule,
     UserModule,
     HealthModule,
+    SpotifyModule,
+    AdminModule,
+    DeviceModule,
+    ConversationModule,
   ],
   providers: [
     Logger,
@@ -84,6 +95,11 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
     {
       provide: APP_GUARD,
       useClass: JwtGuard,
+    },
+    // Roles guard for authorization
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })
