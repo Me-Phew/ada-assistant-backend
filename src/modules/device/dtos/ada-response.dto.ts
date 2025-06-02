@@ -1,7 +1,5 @@
 export class AdaResponseDto {
   success: boolean;
-  transcription: string;
-  responseText: string;
   responsePath: string;
   isCommand: boolean;
   isPlaybackStartRequest: boolean;

@@ -221,6 +221,7 @@ export class DeviceService {
 
     return events;
   }
+
   // Helper method to handle SSE transcription with proper streaming
   async handleSSETranscription(
     wavBuffer: Buffer,
