@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@apollo/server": "^4.12.0",
-    "@distube/ytdl-core": "^4.16.10",
+    "@distube/ytdl-core": "^4.16.11",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@nanogiants/nestjs-swagger-api-exception-decorator": "^1.7.2",

@@ -12,8 +12,8 @@ importers:
         specifier: ^4.12.0
         version: 4.12.0(graphql@16.10.0)
       '@distube/ytdl-core':
-        specifier: ^4.16.10
-        version: 4.16.10
+        specifier: ^4.16.11
+        version: 4.16.11
       '@ffmpeg/ffmpeg':
         specifier: ^0.12.15
         version: 0.12.15
@@ -1020,6 +1020,10 @@ packages:
 
   '@distube/ytdl-core@4.16.10':
     resolution: {integrity: sha512-KFKZtNlynOO0PYxelUF5h2bKyAU1d8fe6aZmo+gxWt7H2MQbd0bUeyV4y9iWhI57nukjkSXXQGB625CfhrVdGQ==}
+    engines: {node: '>=20.18.1'}
+
+  '@distube/ytdl-core@4.16.11':
+    resolution: {integrity: sha512-yMQiicS5CuuTBsROb1iCRM09VZVL98EJ40LEtC7dMrgOWaHuJIwaL1w/ddC9DTNOUEV90T/1xYYLqM6Oc7q9kQ==}
     engines: {node: '>=20.18.1'}
 
   '@eslint-community/eslint-utils@4.6.1':
@@ -6526,6 +6530,18 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.9
 
   '@distube/ytdl-core@4.16.10':
+    dependencies:
+      http-cookie-agent: 7.0.1(tough-cookie@5.1.2)(undici@7.10.0)
+      https-proxy-agent: 7.0.6
+      m3u8stream: 0.8.6
+      miniget: 4.2.3
+      sax: 1.4.1
+      tough-cookie: 5.1.2
+      undici: 7.10.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@distube/ytdl-core@4.16.11':
     dependencies:
       http-cookie-agent: 7.0.1(tough-cookie@5.1.2)(undici@7.10.0)
       https-proxy-agent: 7.0.6
